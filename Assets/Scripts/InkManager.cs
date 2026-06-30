@@ -11,7 +11,7 @@ public class InkUIManager : MonoBehaviour
 
     [Header("UI")]
     public TMP_Text dialogueText;
-    public Button[] choiceButtons; // isi 4 button di inspector
+    public Button[] choiceButtons;
 
     private bool isDialogueActive = false;
     private bool waitingForInput = false;
