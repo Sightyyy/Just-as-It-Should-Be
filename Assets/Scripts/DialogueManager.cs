@@ -16,7 +16,7 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI dialogueText;
     [SerializeField] private TextMeshProUGUI displayNameText;
     [SerializeField] private Animator portraitAnimator;
-    private Animator layoutAnimator;
+    //private Animator layoutAnimator;
 
     [Header("Choices UI")]
     [SerializeField] private GameObject[] choices;
@@ -33,7 +33,7 @@ public class DialogueManager : MonoBehaviour
 
     private const string SPEAKER_TAG = "speaker";
     private const string PORTRAIT_TAG = "portrait";
-    private const string LAYOUT_TAG = "layout";
+    //private const string LAYOUT_TAG = "layout";
     //private const string AUDIO_TAG = "audio";
 
     private void Awake()
@@ -79,7 +79,7 @@ public class DialogueManager : MonoBehaviour
         //}
     }
 
-    public void EnterDialogueMode(TextAsset inkJSON, Animator emoteAnimator)
+    public void EnterDialogueMode(TextAsset inkJSON)
     {
         currentStory = new Story(inkJSON.text);
         dialogueIsPlaying = true;
@@ -87,7 +87,7 @@ public class DialogueManager : MonoBehaviour
 
         displayNameText.text = "???";
         portraitAnimator.Play("default");
-        layoutAnimator.Play("right");
+        //layoutAnimator.Play("right");
 
         ContinueStory();
     }
@@ -139,7 +139,7 @@ public class DialogueManager : MonoBehaviour
 
         foreach (char letter in line.ToCharArray())
         {
-            if (dialoguePanel.activeInHierarchy) // REMEMBER TO CHANGE THIS
+            if (dialoguePanel.activeInHierarchy)
             {
                 dialogueText.maxVisibleCharacters = line.Length;
                 break;

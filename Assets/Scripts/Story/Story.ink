@@ -1,4 +1,10 @@
-﻿=== start ===
+// ===== VARIABLES =====
+VAR calm = 0
+VAR fear = 0
+VAR doubt = 0
+VAR courage = 0
+
+=== start ===
 #scene:intro
 Kamu terbangun di dunia yang terasa… berbeda.
 
@@ -42,10 +48,3 @@ Tidak ada yang berubah… tapi terasa berat.
 Sebuah suara menjawab dari dalam dirimu sendiri.
 “Akhirnya kamu bicara.”
 -> END
-
-
-// ===== VARIABLES =====
-VAR calm = 0
-VAR fear = 0
-VAR doubt = 0
-VAR courage = 0
