@@ -3,8 +3,13 @@ using UnityEngine;
 
 public static class SaveManager
 {
-    static string GetPath(int slot) =>
-        Application.persistentDataPath + $"/save_{slot}.json";
+    private const string SaveFilePrefix = "save";
+    private const string SaveFileExtension = "json";
+
+    public static bool HasSave(int slot)
+    {
+        return File.Exists(GetPath(slot));
+    }
 
     public static void Save(SaveData data)
     {
@@ -18,5 +23,10 @@ public static class SaveManager
         if (!File.Exists(path)) return null;
 
         return JsonUtility.FromJson<SaveData>(File.ReadAllText(path));
+    }
+
+    private static string GetPath(int slot)
+    {
+        return Path.Combine(Application.persistentDataPath, $"{SaveFilePrefix}_{slot}.{SaveFileExtension}");
     }
 }

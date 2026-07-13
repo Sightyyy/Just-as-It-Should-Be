@@ -17,4 +17,25 @@ public class SaveData
 
     public List<string> storyFlags = new();
     public List<string> visitedScenes = new();
+
+    public bool HasStoryFlag(string flag)
+    {
+        return storyFlags.Contains(flag);
+    }
+
+    public void AddStoryFlag(string flag)
+    {
+        if (!storyFlags.Contains(flag))
+        {
+            storyFlags.Add(flag);
+        }
+    }
+
+    public void MarkSceneVisited(string scene)
+    {
+        if (!visitedScenes.Contains(scene))
+        {
+            visitedScenes.Add(scene);
+        }
+    }
 }

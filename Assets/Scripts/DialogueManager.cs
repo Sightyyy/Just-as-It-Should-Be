@@ -30,6 +30,7 @@ public class DialogueManager : MonoBehaviour
     private Coroutine displayLineCoroutine;
 
     private static DialogueManager instance;
+    public static DialogueManager Instance => instance;
 
     private const string SPEAKER_TAG = "speaker";
     private const string PORTRAIT_TAG = "portrait";
@@ -48,6 +49,13 @@ public class DialogueManager : MonoBehaviour
     public static DialogueManager GetInstance()
     {
         return instance;
+    }
+
+    public void ContinueDialogue()
+    {
+        if (!dialogueIsPlaying || !canContinueToNextLine || currentStory.currentChoices.Count > 0) return;
+
+        ContinueStory();
     }
 
     private void Start()
@@ -238,7 +246,7 @@ public class DialogueManager : MonoBehaviour
 
     public void MakeChoice(int choiceIndex)
     {
-        if (canContinueToNextLine)
+        if (canContinueToNextLine && currentStory != null && choiceIndex >= 0 && choiceIndex < currentStory.currentChoices.Count)
         {
             currentStory.ChooseChoiceIndex(choiceIndex);
             //InputManager.GetInstance().RegisterSubmitPressed();

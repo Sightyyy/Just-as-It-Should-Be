@@ -2,14 +2,14 @@ using UnityEngine;
 
 public class ObjectSortingRelativeToPlayer : MonoBehaviour
 {
-    public Transform player;
+    [SerializeField] private Transform player;
 
     [Header("Assign dari Inspector")]
-    public GameObject pivotObject;     // object dengan tag PivotPoint
-    public GameObject visualObject;    // object yang punya SpriteRenderer
+    [SerializeField] private GameObject pivotObject;
+    [SerializeField] private GameObject visualObject;
 
-    public int inFrontOrder = 1;
-    public int behindOrder = 3;
+    [SerializeField] private int inFrontOrder = 1;
+    [SerializeField] private int behindOrder = 3;
 
     private Transform pivotTransform;
     private SpriteRenderer[] renderers;
@@ -29,10 +29,12 @@ public class ObjectSortingRelativeToPlayer : MonoBehaviour
         ApplySorting();
     }
 
-    // =========================
-    // INIT
-    // =========================
-    void InitializeComponents()
+    public void SetPlayer(Transform target)
+    {
+        player = target;
+    }
+
+    private void InitializeComponents()
     {
         if (pivotObject != null)
         {
@@ -53,7 +55,7 @@ public class ObjectSortingRelativeToPlayer : MonoBehaviour
         }
     }
 
-    void InitializePlayer()
+    private void InitializePlayer()
     {
         if (player == null)
         {
@@ -63,10 +65,7 @@ public class ObjectSortingRelativeToPlayer : MonoBehaviour
         }
     }
 
-    // =========================
-    // CORE
-    // =========================
-    void ApplySorting()
+    private void ApplySorting()
     {
         if (player == null || pivotTransform == null || renderers == null) return;
 

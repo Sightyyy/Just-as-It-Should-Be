@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class AnalogClockHand : MonoBehaviour
 {
+    private const float HoursPerDay = 24f;
+    private const float MinutesPerHour = 60f;
+
     [SerializeField] private RectTransform hand;
     [SerializeField] private float realMinutesPerGameDay = 15f;
     [SerializeField] private float startHour = 0f;
@@ -17,7 +20,10 @@ public class AnalogClockHand : MonoBehaviour
     private float elapsedSeconds;
     private Quaternion midnightRotation;
 
-    void Awake()
+    public float CurrentHour => GetCurrentHour();
+    public string CurrentTimeText => currentTimeText;
+
+    protected virtual void Awake()
     {
         if (hand == null)
         {
@@ -32,7 +38,7 @@ public class AnalogClockHand : MonoBehaviour
         UpdateHandRotation();
     }
 
-    void Update()
+    protected virtual void Update()
     {
         HandleDebugHotkeys();
 
@@ -42,7 +48,14 @@ public class AnalogClockHand : MonoBehaviour
 
     public void AddGameHours(float hours)
     {
-        elapsedSeconds = Mathf.Repeat(elapsedSeconds + hours / 24f * GetGameDaySeconds(), GetGameDaySeconds());
+        elapsedSeconds = Mathf.Repeat(elapsedSeconds + hours / HoursPerDay * GetGameDaySeconds(), GetGameDaySeconds());
+        UpdateHandRotation();
+    }
+
+    public void SetTime(float hour, float minute = 0f)
+    {
+        float targetHour = Mathf.Repeat(hour + minute / MinutesPerHour, HoursPerDay);
+        elapsedSeconds = targetHour / HoursPerDay * GetGameDaySeconds();
         UpdateHandRotation();
     }
 
@@ -59,7 +72,7 @@ public class AnalogClockHand : MonoBehaviour
         }
     }
 
-    private void UpdateHandRotation()
+    protected virtual void UpdateHandRotation()
     {
         if (hand == null) return;
 
@@ -72,14 +85,20 @@ public class AnalogClockHand : MonoBehaviour
 
     private void UpdateInspectorTime(float dayProgress)
     {
-        float totalGameMinutes = dayProgress * 24f * 60f;
-        currentHour = Mathf.FloorToInt(totalGameMinutes / 60f) % 24;
-        currentMinute = Mathf.FloorToInt(totalGameMinutes % 60f);
+        float totalGameMinutes = dayProgress * HoursPerDay * MinutesPerHour;
+        currentHour = Mathf.FloorToInt(totalGameMinutes / MinutesPerHour) % (int)HoursPerDay;
+        currentMinute = Mathf.FloorToInt(totalGameMinutes % MinutesPerHour);
         currentTimeText = $"{currentHour:00}:{currentMinute:00}";
     }
 
     private float GetGameDaySeconds()
     {
         return Mathf.Max(1f, realMinutesPerGameDay * 60f);
+    }
+
+    private float GetCurrentHour()
+    {
+        float dayProgress = elapsedSeconds / GetGameDaySeconds();
+        return Mathf.Repeat(dayProgress * HoursPerDay, HoursPerDay);
     }
 }
