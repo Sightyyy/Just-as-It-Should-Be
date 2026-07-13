@@ -18,6 +18,7 @@ public class MapController : MonoBehaviour
 
     [Header("Settings")]
     public bool rotatePlayerMarker = true;
+    public bool handleInputToggle = true;
 
     void Update()
     {
@@ -32,7 +33,7 @@ public class MapController : MonoBehaviour
 
     void HandleToggle()
     {
-        if (Input.GetKeyDown(KeyCode.M))
+        if (handleInputToggle && Input.GetKeyDown(KeyCode.M))
         {
             mapPanel.SetActive(!mapPanel.activeSelf);
         }

@@ -10,6 +10,8 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody2D rb;
     private Vector2 input;
 
+    public bool CanControl => canControl;
+
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
