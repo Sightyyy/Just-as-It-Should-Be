@@ -15,6 +15,11 @@ public class SaveData
 
     public float playTime;
 
+    public int calm;
+    public int fear;
+    public int doubt;
+    public int courage;
+
     public List<string> storyFlags = new();
     public List<string> visitedScenes = new();
 }

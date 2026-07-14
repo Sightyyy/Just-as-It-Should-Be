@@ -1,14 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using TMPro;
 using Ink.Runtime;
+using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
-public class DialogueManager : MonoBehaviour
+public sealed class DialogueManager : MonoBehaviour
 {
-    [Header("Params")]
-    [SerializeField] private float typingSpeed = 0.04f;
+    [Header("Dialogue Parameters")]
+    [SerializeField, Min(0f)] private float typingSpeed = 0.04f;
+    [SerializeField] private InkFileManager inkFileManager;
+    [SerializeField] private DialogueProgress dialogueProgress;
 
     [Header("Dialogue UI")]
     [SerializeField] private GameObject dialoguePanel;
@@ -16,233 +19,471 @@ public class DialogueManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI dialogueText;
     [SerializeField] private TextMeshProUGUI displayNameText;
     [SerializeField] private Animator portraitAnimator;
-    //private Animator layoutAnimator;
 
     [Header("Choices UI")]
     [SerializeField] private GameObject[] choices;
-    private TextMeshProUGUI[] choicesText;
 
+    private readonly DialogueState dialogueState = new DialogueState();
+    private readonly DialogueTagParser tagParser = new DialogueTagParser();
+    private TextMeshProUGUI[] choiceTexts;
+    private Button[] choiceButtons;
     private Story currentStory;
-    public bool dialogueIsPlaying { get; private set; }
-
-    private bool canContinueToNextLine = false;
-
     private Coroutine displayLineCoroutine;
+    private bool isTyping;
+    private InkFileManager.ConversationBranch activeConversation;
 
-    private static DialogueManager instance;
+    private static readonly string[] PersistentStatNames = { "calm", "fear", "doubt", "courage" };
 
-    private const string SPEAKER_TAG = "speaker";
-    private const string PORTRAIT_TAG = "portrait";
-    //private const string LAYOUT_TAG = "layout";
-    //private const string AUDIO_TAG = "audio";
+    public bool DialogueIsPlaying { get; private set; }
+    public static DialogueManager Instance { get; private set; }
 
     private void Awake()
     {
-        if (instance != null)
+        if (Instance != null && Instance != this)
         {
-            Debug.LogWarning("Found more than one Dialogue Manager in the scene");
+            Debug.LogWarning("More than one DialogueManager was found. The duplicate was disabled.", this);
+            enabled = false;
+            return;
         }
-        instance = this;
-    }
 
-    public static DialogueManager GetInstance()
-    {
-        return instance;
+        Instance = this;
+        dialogueProgress ??= GetComponent<DialogueProgress>();
+        CacheChoiceControls();
     }
 
     private void Start()
     {
-        dialogueIsPlaying = false;
-        dialoguePanel.SetActive(false);
-
-        //layoutAnimator = dialoguePanel.GetComponent<Animator>();
-
-        choicesText = new TextMeshProUGUI[choices.Length];
-        int index = 0;
-        foreach (GameObject choice in choices)
-        {
-            choicesText[index] = choice.GetComponentInChildren<TextMeshProUGUI>();
-            index++;
-        }
+        SetDialogueVisible(false);
+        HideChoices();
     }
 
     private void Update()
     {
-        if (!dialogueIsPlaying)
+        if (!DialogueIsPlaying || !Input.GetKeyDown(KeyCode.F))
         {
             return;
         }
 
-        //if (canContinueToNextLine && currentStory.currentChoices.Count == 0)
-        //{
-        //    ContinueStory();
-        //}
+        if (isTyping)
+        {
+            CompleteCurrentLine();
+            return;
+        }
+
+        if (currentStory != null && currentStory.currentChoices.Count == 0)
+        {
+            ContinueStory();
+        }
     }
 
-    public void EnterDialogueMode(TextAsset inkJSON)
+    private void OnDestroy()
     {
-        currentStory = new Story(inkJSON.text);
-        dialogueIsPlaying = true;
-        dialoguePanel.SetActive(true);
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
 
-        displayNameText.text = "???";
-        portraitAnimator.Play("default");
-        //layoutAnimator.Play("right");
+    public bool StartConversation(string conversationKey)
+    {
+        if (DialogueIsPlaying)
+        {
+            return false;
+        }
+
+        if (inkFileManager == null)
+        {
+            Debug.LogError("DialogueManager needs an InkFileManager reference.", this);
+            return false;
+        }
+
+        if (!inkFileManager.TryGetConversation(conversationKey, dialogueProgress, out InkFileManager.ConversationBranch conversation))
+        {
+            Debug.LogError($"Conversation '{conversationKey}' is missing, has no Ink file, or its conditions are not met.", this);
+            return false;
+        }
+
+        BeginConversation(conversation);
+        return true;
+    }
+
+    public bool StartBestConversation(IReadOnlyList<string> candidateKeys)
+    {
+        if (DialogueIsPlaying || inkFileManager == null)
+        {
+            return false;
+        }
+
+        if (!inkFileManager.TryGetBestConversation(candidateKeys, dialogueProgress, out InkFileManager.ConversationBranch conversation))
+        {
+            Debug.LogWarning("No eligible conversation is available for this NPC.", this);
+            return false;
+        }
+
+        BeginConversation(conversation);
+        return true;
+    }
+
+    private void BeginConversation(InkFileManager.ConversationBranch conversation)
+    {
+        activeConversation = conversation;
+        inkFileManager.StartConversation(conversation.conversationKey);
+        EnterDialogueMode(conversation.inkFile);
+    }
+
+    public void EnterDialogueMode(TextAsset inkJson)
+    {
+        if (inkJson == null)
+        {
+            Debug.LogError("Cannot start dialogue without an Ink JSON asset.", this);
+            return;
+        }
+
+        StopActiveLine();
+        currentStory = new Story(inkJson.text);
+        BindProgressFunctions();
+        ApplyPersistentStatsToInk();
+        dialogueState.Reset();
+        DialogueIsPlaying = true;
+        SetDialogueVisible(true);
+        HideChoices();
+
+        if (displayNameText != null)
+        {
+            displayNameText.text = "???";
+        }
 
         ContinueStory();
     }
 
-    private IEnumerator ExitDialogueMode()
-    {
-        yield return new WaitForSeconds(0.2f);
-
-        dialogueIsPlaying = false;
-        dialoguePanel.SetActive(false);
-        dialogueText.text = "";
-    }
-
     private void ContinueStory()
     {
-        if (currentStory.canContinue)
+        if (currentStory == null)
         {
-            if (displayLineCoroutine != null)
+            ExitDialogueMode();
+            return;
+        }
+
+        if (!currentStory.canContinue)
+        {
+            if (currentStory.currentChoices.Count > 0)
             {
-                StopCoroutine(displayLineCoroutine);
-            }
-            string nextLine = currentStory.Continue();
-            if (nextLine.Equals("") && !currentStory.canContinue)
-            {
-                StartCoroutine(ExitDialogueMode());
+                DisplayChoices();
             }
             else
             {
-                HandleTags(currentStory.currentTags);
-                displayLineCoroutine = StartCoroutine(DisplayLine(nextLine));
+                FinishConversation();
             }
+            return;
         }
-        else
-        {
-            StartCoroutine(ExitDialogueMode());
-        }
+
+        string nextLine = currentStory.Continue();
+        tagParser.Apply(currentStory.currentTags, dialogueState);
+        ApplyPresentationTags();
+
+        StopActiveLine();
+        displayLineCoroutine = StartCoroutine(DisplayLine(nextLine));
     }
 
     private IEnumerator DisplayLine(string line)
     {
+        if (dialogueText == null)
+        {
+            Debug.LogError("DialogueManager needs a dialogue text reference.", this);
+            FinishConversation();
+            yield break;
+        }
+
         dialogueText.text = line;
         dialogueText.maxVisibleCharacters = 0;
-        continueIcon.SetActive(false);
+        dialogueText.ForceMeshUpdate();
+        int visibleCharacterCount = dialogueText.textInfo.characterCount;
+
+        isTyping = true;
+        SetContinueVisible(false);
         HideChoices();
 
-        canContinueToNextLine = false;
-
-        bool isAddingRichTextTag = false;
-
-        foreach (char letter in line.ToCharArray())
+        for (int visibleCharacters = 0; visibleCharacters < visibleCharacterCount; visibleCharacters++)
         {
-            if (dialoguePanel.activeInHierarchy)
+            dialogueText.maxVisibleCharacters = visibleCharacters + 1;
+            if (typingSpeed > 0f)
             {
-                dialogueText.maxVisibleCharacters = line.Length;
-                break;
-            }
-
-            if (letter == '<' || isAddingRichTextTag)
-            {
-                isAddingRichTextTag = true;
-                if (letter == '>')
-                {
-                    isAddingRichTextTag = false;
-                }
+                yield return new WaitForSeconds(typingSpeed);
             }
             else
             {
-                dialogueText.maxVisibleCharacters++;
-                yield return new WaitForSeconds(typingSpeed);
+                yield return null;
             }
         }
 
-        continueIcon.SetActive(true);
-        DisplayChoices();
+        isTyping = false;
+        displayLineCoroutine = null;
+        SetContinueVisible(currentStory != null && currentStory.currentChoices.Count == 0);
 
-        canContinueToNextLine = true;
-    }
-
-    private void HideChoices()
-    {
-        foreach (GameObject choiceButton in choices)
+        if (currentStory != null && currentStory.currentChoices.Count > 0)
         {
-            choiceButton.SetActive(false);
+            DisplayChoices();
         }
     }
 
-    private void HandleTags(List<string> currentTags)
+    private void CompleteCurrentLine()
     {
-        foreach (string tag in currentTags)
+        if (dialogueText == null)
         {
-            string[] splitTag = tag.Split(':');
-            if (splitTag.Length != 2)
-            {
-                Debug.LogError("Tag could not be appropriately parsed: " + tag);
-            }
-            string tagKey = splitTag[0].Trim();
-            string tagValue = splitTag[1].Trim();
+            return;
+        }
 
-            switch (tagKey)
-            {
-                case SPEAKER_TAG:
-                    displayNameText.text = tagValue;
-                    break;
-                case PORTRAIT_TAG:
-                    portraitAnimator.Play(tagValue);
-                    break;
-                //case LAYOUT_TAG:
-                //    layoutAnimator.Play(tagValue);
-                //    break;
-                default:
-                    Debug.LogWarning("Tag came in but is not currently being handled: " + tag);
-                    break;
-            }
+        StopActiveLine();
+        dialogueText.maxVisibleCharacters = int.MaxValue;
+        SetContinueVisible(currentStory != null && currentStory.currentChoices.Count == 0);
+
+        if (currentStory != null && currentStory.currentChoices.Count > 0)
+        {
+            DisplayChoices();
         }
     }
 
     private void DisplayChoices()
     {
-        List<Choice> currentChoices = currentStory.currentChoices;
-
-        if (currentChoices.Count > choices.Length)
+        if (currentStory == null)
         {
-            Debug.LogError("More choices were given than the UI can support. Number of choices given: "
-                + currentChoices.Count);
+            return;
         }
 
-        int index = 0;
-        foreach (Choice choice in currentChoices)
+        int supportedChoiceCount = Mathf.Min(currentStory.currentChoices.Count, choices.Length);
+        if (currentStory.currentChoices.Count > choices.Length)
         {
-            choices[index].gameObject.SetActive(true);
-            choicesText[index].text = choice.text;
-            index++;
-        }
-        for (int i = index; i < choices.Length; i++)
-        {
-            choices[i].gameObject.SetActive(false);
+            Debug.LogWarning($"Dialogue has {currentStory.currentChoices.Count} choices but this UI supports {choices.Length}. Extra choices are unavailable.", this);
         }
 
-        StartCoroutine(SelectFirstChoice());
-    }
+        for (int index = 0; index < choices.Length; index++)
+        {
+            bool shouldShow = index < supportedChoiceCount;
+            if (choices[index] != null)
+            {
+                choices[index].SetActive(shouldShow);
+            }
 
-    private IEnumerator SelectFirstChoice()
-    {
-        EventSystem.current.SetSelectedGameObject(null);
-        yield return new WaitForEndOfFrame();
-        EventSystem.current.SetSelectedGameObject(choices[0].gameObject);
+            if (shouldShow && choiceTexts[index] != null)
+            {
+                choiceTexts[index].text = currentStory.currentChoices[index].text;
+            }
+        }
+
+        SetContinueVisible(false);
+        SelectFirstVisibleChoice();
     }
 
     public void MakeChoice(int choiceIndex)
     {
-        if (canContinueToNextLine)
+        if (!DialogueIsPlaying || currentStory == null || isTyping || choiceIndex < 0 || choiceIndex >= currentStory.currentChoices.Count)
         {
-            currentStory.ChooseChoiceIndex(choiceIndex);
-            //InputManager.GetInstance().RegisterSubmitPressed();
-            ContinueStory();
+            return;
         }
+
+        HideChoices();
+        currentStory.ChooseChoiceIndex(choiceIndex);
+        ContinueStory();
+    }
+
+    private void ApplyPresentationTags()
+    {
+        if (displayNameText != null)
+        {
+            displayNameText.text = dialogueState.Speaker;
+        }
+
+        if (portraitAnimator == null || string.IsNullOrWhiteSpace(dialogueState.PortraitState))
+        {
+            return;
+        }
+
+        int stateHash = Animator.StringToHash(dialogueState.PortraitState);
+        if (portraitAnimator.HasState(0, stateHash))
+        {
+            portraitAnimator.Play(stateHash);
+        }
+        else
+        {
+            Debug.LogWarning($"Portrait animator has no state named '{dialogueState.PortraitState}'.", portraitAnimator);
+        }
+    }
+
+    private void CacheChoiceControls()
+    {
+        choiceTexts = new TextMeshProUGUI[choices?.Length ?? 0];
+        choiceButtons = new Button[choices?.Length ?? 0];
+
+        for (int index = 0; index < choiceTexts.Length; index++)
+        {
+            GameObject choice = choices[index];
+            if (choice == null)
+            {
+                continue;
+            }
+
+            choiceTexts[index] = choice.GetComponentInChildren<TextMeshProUGUI>(true);
+            choiceButtons[index] = choice.GetComponent<Button>();
+            if (choiceButtons[index] == null)
+            {
+                Debug.LogWarning($"Dialogue choice {index + 1} has no Button component.", choice);
+                continue;
+            }
+
+            int choiceIndex = index;
+            choiceButtons[index].onClick.AddListener(() => MakeChoice(choiceIndex));
+        }
+    }
+
+    private void HideChoices()
+    {
+        if (choices == null)
+        {
+            return;
+        }
+
+        foreach (GameObject choice in choices)
+        {
+            if (choice != null)
+            {
+                choice.SetActive(false);
+            }
+        }
+    }
+
+    private void SelectFirstVisibleChoice()
+    {
+        if (EventSystem.current == null || choices == null)
+        {
+            return;
+        }
+
+        EventSystem.current.SetSelectedGameObject(null);
+        foreach (GameObject choice in choices)
+        {
+            if (choice != null && choice.activeInHierarchy)
+            {
+                EventSystem.current.SetSelectedGameObject(choice);
+                return;
+            }
+        }
+    }
+
+    private void ExitDialogueMode()
+    {
+        StopActiveLine();
+        DialogueIsPlaying = false;
+        currentStory = null;
+        activeConversation = null;
+        dialogueState.Reset();
+        HideChoices();
+        SetContinueVisible(false);
+        SetDialogueVisible(false);
+
+        if (dialogueText != null)
+        {
+            dialogueText.text = string.Empty;
+        }
+    }
+
+    private void StopActiveLine()
+    {
+        if (displayLineCoroutine != null)
+        {
+            StopCoroutine(displayLineCoroutine);
+            displayLineCoroutine = null;
+        }
+
+        isTyping = false;
+    }
+
+    private void SetDialogueVisible(bool visible)
+    {
+        if (dialoguePanel != null)
+        {
+            dialoguePanel.SetActive(visible);
+        }
+    }
+
+    private void SetContinueVisible(bool visible)
+    {
+        if (continueIcon != null)
+        {
+            continueIcon.SetActive(visible);
+        }
+    }
+
+    private void BindProgressFunctions()
+    {
+        if (currentStory == null || dialogueProgress == null)
+        {
+            return;
+        }
+
+        currentStory.BindExternalFunction<string>("GetStat", statName => dialogueProgress.GetStat(statName));
+        currentStory.BindExternalFunction<string, int>("AddStat", (statName, amount) => dialogueProgress.AddStat(statName, amount));
+        currentStory.BindExternalFunction<string>("HasFlag", flag => dialogueProgress.HasFlag(flag));
+        currentStory.BindExternalFunction<string>("SetFlag", flag => dialogueProgress.SetFlag(flag));
+    }
+
+    private void ApplyPersistentStatsToInk()
+    {
+        if (currentStory == null || dialogueProgress == null)
+        {
+            return;
+        }
+
+        foreach (string statName in PersistentStatNames)
+        {
+            if (currentStory.variablesState.GlobalVariableExistsWithName(statName))
+            {
+                currentStory.variablesState[statName] = dialogueProgress.GetStat(statName);
+            }
+        }
+    }
+
+    private void CaptureInkStats()
+    {
+        if (currentStory == null || dialogueProgress == null)
+        {
+            return;
+        }
+
+        foreach (string statName in PersistentStatNames)
+        {
+            if (currentStory.variablesState.GlobalVariableExistsWithName(statName))
+            {
+                object value = currentStory.variablesState[statName];
+                if (value is int intValue)
+                {
+                    dialogueProgress.SetStat(statName, intValue);
+                }
+            }
+        }
+    }
+
+    private void FinishConversation()
+    {
+        CaptureInkStats();
+
+        string nextConversationKey = null;
+        if (currentStory != null && currentStory.variablesState.GlobalVariableExistsWithName("nextBranch"))
+        {
+            nextConversationKey = currentStory.variablesState["nextBranch"] as string;
+        }
+
+        if (dialogueProgress != null && activeConversation != null && !string.IsNullOrWhiteSpace(activeConversation.completionFlag))
+        {
+            dialogueProgress.SetFlag(activeConversation.completionFlag);
+        }
+
+        if (!string.IsNullOrWhiteSpace(nextConversationKey) && inkFileManager != null &&
+            inkFileManager.TryGetConversation(nextConversationKey, dialogueProgress, out InkFileManager.ConversationBranch nextConversation))
+        {
+            BeginConversation(nextConversation);
+            return;
+        }
+
+        ExitDialogueMode();
     }
 }

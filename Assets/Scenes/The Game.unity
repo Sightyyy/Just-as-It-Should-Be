@@ -167,6 +167,7 @@ GameObject:
   m_Component:
   - component: {fileID: 24413092}
   - component: {fileID: 24413093}
+  - component: {fileID: 24413094}
   m_Layer: 0
   m_Name: Dialogue Manager
   m_TagString: Untagged
@@ -200,14 +201,32 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4cd543aad23140b43b935f6c1b04838c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InkManager
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueManager
   typingSpeed: 0.04
+  inkFileManager: {fileID: 11400000, guid: 24c290dd136b9814fa6cc7b25496e56f, type: 2}
   dialoguePanel: {fileID: 1463665352}
   continueIcon: {fileID: 784052948}
   dialogueText: {fileID: 1916352095}
   displayNameText: {fileID: 122288621}
   portraitAnimator: {fileID: 1808353545}
-  choices: []
+  choices:
+  - {fileID: 1923927769}
+  - {fileID: 623705399}
+  - {fileID: 1059560602}
+  - {fileID: 1137353948}
+  dialogueProgress: {fileID: 24413094}
+--- !u!114 &24413094
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 24413091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d11cafbce114b0a9b2541444e591b84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueProgress
 --- !u!1 &33850074
 GameObject:
   m_ObjectHideFlags: 0
@@ -327,7 +346,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 370177645}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.47082904
+  m_Size: 0.47082898
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -4439,6 +4458,7 @@ GameObject:
   m_Component:
   - component: {fileID: 712743843}
   - component: {fileID: 712743844}
+  - component: {fileID: 712743845}
   m_Layer: 0
   m_Name: NPC
   m_TagString: Untagged
@@ -4520,6 +4540,22 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &712743845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 712743842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a42f5b8a5a0b4b3b93e4080e7d51ce17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NpcDialogueTrigger
+  dialogueManager: {fileID: 24413093}
+  player: {fileID: 538218011}
+  conversationKey: First_Conversation
+  interactionRange: 2
 --- !u!1 &715627215
 GameObject:
   m_ObjectHideFlags: 0
