@@ -28,4 +28,9 @@ public static class SaveManager
         AfterLoad?.Invoke(data);
         return data;
     }
+
+    private static string GetPath(int slot)
+    {
+        return Path.Combine(Application.persistentDataPath, $"{SaveFilePrefix}_{slot}.{SaveFileExtension}");
+    }
 }

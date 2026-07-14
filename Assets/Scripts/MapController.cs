@@ -3,22 +3,24 @@ using UnityEngine;
 public class MapController : MonoBehaviour
 {
     [Header("References")]
-    public GameObject mapPanel;
-    public RectTransform mapRect;
+    [SerializeField] private GameObject mapPanel;
+    [SerializeField] private RectTransform mapRect;
 
-    public Transform player;
-    public RectTransform playerMarker;
+    [SerializeField] private Transform player;
+    [SerializeField] private RectTransform playerMarker;
 
-    public Transform questTarget;
-    public RectTransform questMarker;
+    [SerializeField] private Transform questTarget;
+    [SerializeField] private RectTransform questMarker;
 
     [Header("World Bounds")]
-    public Vector2 worldMin;
-    public Vector2 worldMax;
+    [SerializeField] private Vector2 worldMin;
+    [SerializeField] private Vector2 worldMax;
 
     [Header("Settings")]
-    public bool rotatePlayerMarker = true;
-    public bool handleInputToggle = true;
+    [SerializeField] private bool rotatePlayerMarker = true;
+    [SerializeField] private bool handleInputToggle = true;
+
+    public bool IsOpen => mapPanel != null && mapPanel.activeSelf;
 
     void Update()
     {
@@ -35,8 +37,25 @@ public class MapController : MonoBehaviour
     {
         if (handleInputToggle && Input.GetKeyDown(KeyCode.M))
         {
-            mapPanel.SetActive(!mapPanel.activeSelf);
+            ToggleMap();
         }
+    }
+
+    public void ToggleMap()
+    {
+        SetMapOpen(!IsOpen);
+    }
+
+    public void SetMapOpen(bool open)
+    {
+        if (mapPanel == null) return;
+
+        mapPanel.SetActive(open);
+    }
+
+    public void SetQuestTarget(Transform target)
+    {
+        questTarget = target;
     }
 
     void UpdatePlayerMarker()
@@ -58,7 +77,7 @@ public class MapController : MonoBehaviour
         questMarker.anchoredPosition = ClampToMap(mapPos);
     }
 
-    Vector2 WorldToMapPosition(Vector2 worldPos)
+    private Vector2 WorldToMapPosition(Vector2 worldPos)
     {
         float normalizedX = Mathf.InverseLerp(worldMin.x, worldMax.x, worldPos.x);
         float normalizedY = Mathf.InverseLerp(worldMin.y, worldMax.y, worldPos.y);
@@ -72,7 +91,7 @@ public class MapController : MonoBehaviour
         );
     }
 
-    Vector2 ClampToMap(Vector2 pos)
+    private Vector2 ClampToMap(Vector2 pos)
     {
         float mapWidth = mapRect.rect.width;
         float mapHeight = mapRect.rect.height;

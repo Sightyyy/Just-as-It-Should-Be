@@ -2,15 +2,19 @@ using UnityEngine;
 
 public class CameraManager : MonoBehaviour
 {
-    public Camera realCam;
-    public Camera innerCam;
+    [SerializeField] private Camera realCam;
+    [SerializeField] private Camera innerCam;
+    [SerializeField] private Rect innerWorldRealCameraInset = new Rect(0.02f, 0.7f, 0.25f, 0.25f);
+
+    public Camera RealCamera => realCam;
+    public Camera InnerCamera => innerCam;
 
     public void ActivateInner()
     {
         innerCam.rect = new Rect(0, 0, 1, 1);
         innerCam.gameObject.SetActive(true);
 
-        realCam.rect = new Rect(0.02f, 0.7f, 0.25f, 0.25f);
+        realCam.rect = innerWorldRealCameraInset;
         realCam.gameObject.SetActive(true);
     }
 

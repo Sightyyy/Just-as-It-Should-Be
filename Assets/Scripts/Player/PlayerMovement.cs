@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 4f;
+    [SerializeField] private float moveSpeed = 4f;
 
     private bool canControl = true;
 
@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 input;
 
     public bool CanControl => canControl;
+    public Vector2 MoveInput => input;
 
     void Awake()
     {
@@ -24,9 +25,7 @@ public class PlayerMovement : MonoBehaviour
         {
             input = Vector2.zero;
 
-            animator.SetFloat("MoveX", 0);
-            animator.SetFloat("MoveY", 0);
-            animator.SetBool("IsMoving", false);
+            UpdateAnimation(Vector2.zero);
 
             return;
         }
@@ -34,12 +33,12 @@ public class PlayerMovement : MonoBehaviour
         input.x = Input.GetAxisRaw("Horizontal");
         input.y = Input.GetAxisRaw("Vertical");
 
-        animator.SetFloat("MoveX", input.x);
-        animator.SetFloat("MoveY", input.y);
-        animator.SetBool("IsMoving", input != Vector2.zero);
-
         if (input.magnitude > 1)
+        {
             input.Normalize();
+        }
+
+        UpdateAnimation(input);
     }
 
     void FixedUpdate()
@@ -56,5 +55,14 @@ public class PlayerMovement : MonoBehaviour
     public void SetControl(bool value)
     {
         canControl = value;
+    }
+
+    private void UpdateAnimation(Vector2 movement)
+    {
+        if (animator == null) return;
+
+        animator.SetFloat("MoveX", movement.x);
+        animator.SetFloat("MoveY", movement.y);
+        animator.SetBool("IsMoving", movement != Vector2.zero);
     }
 }
