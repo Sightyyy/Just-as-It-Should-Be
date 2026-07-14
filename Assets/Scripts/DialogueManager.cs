@@ -51,13 +51,6 @@ public sealed class DialogueManager : MonoBehaviour
         CacheChoiceControls();
     }
 
-    public void ContinueDialogue()
-    {
-        if (!dialogueIsPlaying || !canContinueToNextLine || currentStory.currentChoices.Count > 0) return;
-
-        ContinueStory();
-    }
-
     private void Start()
     {
         SetDialogueVisible(false);

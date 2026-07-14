@@ -29,8 +29,8 @@ public static class SaveManager
         return data;
     }
 
-    private static string GetPath(int slot)
-    {
-        return Path.Combine(Application.persistentDataPath, $"{SaveFilePrefix}_{slot}.{SaveFileExtension}");
-    }
+    //private static string GetPath(int slot)
+    //{
+    //    return Path.Combine(Application.persistentDataPath, $"{SaveFilePrefix}_{slot}.{SaveFileExtension}");
+    //}
 }
