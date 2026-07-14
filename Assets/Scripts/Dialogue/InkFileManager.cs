@@ -9,7 +9,6 @@ public class InkFileManager : ScriptableObject
     {
         public string conversationKey;
         public TextAsset inkFile;
-        public List<string> nextPossibleBranches;
         [Tooltip("priority is to choose a conversation priority when multiple conversations is possible")]
         public int priority;
         [Tooltip("conditions on how to make this particular conversation happen")]
@@ -31,11 +30,6 @@ public class InkFileManager : ScriptableObject
         currentConversationKey = conversationKey;
     }
 
-    public TextAsset GetCurrentInkFile()
-    {
-        return GetInkFileByKey(currentConversationKey);
-    }
-
     public TextAsset GetInkFileByKey(string conversationKey)
     {
         ConversationBranch branch = conversationBranches.Find(b => b.conversationKey == conversationKey);
@@ -48,13 +42,13 @@ public class InkFileManager : ScriptableObject
         return inkFile != null;
     }
 
-    public bool TryGetConversation(string conversationKey, DialogueProgress progress, out ConversationBranch conversation)
+    public bool TryGetConversation(string conversationKey, DialogueProgress progress, PlayerStates states, out ConversationBranch conversation)
     {
         conversation = conversationBranches.Find(branch => branch.conversationKey == conversationKey);
-        return conversation != null && conversation.inkFile != null && IsEligible(conversation, progress);
+        return conversation != null && conversation.inkFile != null && IsEligible(conversation, progress, states);
     }
 
-    public bool TryGetBestConversation(IReadOnlyList<string> candidateKeys, DialogueProgress progress, out ConversationBranch conversation)
+    public bool TryGetBestConversation(IReadOnlyList<string> candidateKeys, DialogueProgress progress, PlayerStates states, out ConversationBranch conversation)
     {
         conversation = null;
         if (conversationBranches == null)
@@ -64,7 +58,7 @@ public class InkFileManager : ScriptableObject
 
         foreach (ConversationBranch candidate in conversationBranches)
         {
-            if (candidate?.inkFile == null || !IsCandidate(candidate.conversationKey, candidateKeys) || !IsEligible(candidate, progress))
+            if (candidate?.inkFile == null || !IsCandidate(candidate.conversationKey, candidateKeys) || !IsEligible(candidate, progress, states))
             {
                 continue;
             }
@@ -96,7 +90,7 @@ public class InkFileManager : ScriptableObject
         return false;
     }
 
-    private static bool IsEligible(ConversationBranch conversation, DialogueProgress progress)
+    private static bool IsEligible(ConversationBranch conversation, DialogueProgress progress, PlayerStates states)
     {
         if (conversation.conditions == null)
         {
@@ -105,46 +99,12 @@ public class InkFileManager : ScriptableObject
 
         foreach (DialogueConversationCondition condition in conversation.conditions)
         {
-            if (condition != null && !condition.IsMet(progress))
+            if (condition != null && !condition.IsMet(progress, states))
             {
                 return false;
             }
         }
 
         return true;
-    }
-
-    public List<string> GetNextPossibleBranches()
-    {
-        ConversationBranch currentBranch = conversationBranches.Find(b => b.conversationKey == currentConversationKey);
-        return currentBranch?.nextPossibleBranches ?? new List<string>();
-    }
-
-    public void MoveToNextBranch(string nextBranchKey)
-    {
-        if (conversationBranches.Exists(b => b.conversationKey == nextBranchKey))
-        {
-            Debug.Log("Moved to branch " +  nextBranchKey);
-            currentConversationKey = nextBranchKey;
-        }
-        else
-        {
-            Debug.LogError($"Conversation branch not found: {nextBranchKey}");
-        }
-    }
-
-    public bool HasNextBranches()
-    {
-        return GetNextPossibleBranches().Count > 0;
-    }
-
-    public bool IsDayTransitionBranch(string branchKey)
-    {
-        return branchKey == "next_day";
-    }
-
-    public bool IsToBeContinuedBranch(string branchKey)
-    {
-        return branchKey == "to_be_continued";
     }
 }

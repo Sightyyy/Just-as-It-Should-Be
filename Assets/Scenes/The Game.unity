@@ -204,6 +204,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DialogueManager
   typingSpeed: 0.04
   inkFileManager: {fileID: 11400000, guid: 24c290dd136b9814fa6cc7b25496e56f, type: 2}
+  dialogueProgress: {fileID: 24413094}
+  playerStates: {fileID: 538218013}
   dialoguePanel: {fileID: 1463665352}
   continueIcon: {fileID: 784052948}
   dialogueText: {fileID: 1916352095}
@@ -214,7 +216,6 @@ MonoBehaviour:
   - {fileID: 623705399}
   - {fileID: 1059560602}
   - {fileID: 1137353948}
-  dialogueProgress: {fileID: 24413094}
 --- !u!114 &24413094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3266,6 +3267,7 @@ GameObject:
   m_Component:
   - component: {fileID: 538218011}
   - component: {fileID: 538218010}
+  - component: {fileID: 538218013}
   - component: {fileID: 538218009}
   - component: {fileID: 538218012}
   m_Layer: 0
@@ -3391,6 +3393,18 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
+--- !u!114 &538218013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 538218007}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 058a69e31fb0817469a078e6990257f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStates
 --- !u!1 &576046350
 GameObject:
   m_ObjectHideFlags: 0
@@ -4554,7 +4568,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::NpcDialogueTrigger
   dialogueManager: {fileID: 24413093}
   player: {fileID: 538218011}
-  conversationKey: First_Conversation
+  possibleConversationKeys: []
+  defaultConversationKey: First_Conversation
   interactionRange: 2
 --- !u!1 &715627215
 GameObject:
@@ -6322,6 +6337,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraManager
   realCam: {fileID: 519420031}
   innerCam: {fileID: 826327869}
+  innerWorldRealCameraInset:
+    serializedVersion: 2
+    x: 0.02
+    y: 0.7
+    width: 0.25
+    height: 0.25
 --- !u!4 &1090921829
 Transform:
   m_ObjectHideFlags: 0
@@ -8813,9 +8834,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WatchHandRotator
   hand: {fileID: 1657018871}
   realMinutesPerGameDay: 15
-  startingHour: 0
+  startHour: 0
+  handRotationsPerGameDay: 2
   clockwise: 1
-  useUnscaledTime: 0
+  useInitialRotationAsMidnight: 1
+  midnightRotationOffset: 0
+  enableDebugHotkeys: 1
+  currentHour: 0
+  currentMinute: 0
+  currentTimeText: 
 --- !u!1 &1671896598
 GameObject:
   m_ObjectHideFlags: 0

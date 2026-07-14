@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Ink.Runtime;
@@ -12,6 +13,7 @@ public sealed class DialogueManager : MonoBehaviour
     [SerializeField, Min(0f)] private float typingSpeed = 0.04f;
     [SerializeField] private InkFileManager inkFileManager;
     [SerializeField] private DialogueProgress dialogueProgress;
+    [SerializeField] private PlayerStates playerStates;
 
     [Header("Dialogue UI")]
     [SerializeField] private GameObject dialoguePanel;
@@ -32,8 +34,6 @@ public sealed class DialogueManager : MonoBehaviour
     private bool isTyping;
     private InkFileManager.ConversationBranch activeConversation;
 
-    private static readonly string[] PersistentStatNames = { "calm", "fear", "doubt", "courage" };
-
     public bool DialogueIsPlaying { get; private set; }
     public static DialogueManager Instance { get; private set; }
 
@@ -48,6 +48,7 @@ public sealed class DialogueManager : MonoBehaviour
 
         Instance = this;
         dialogueProgress ??= GetComponent<DialogueProgress>();
+        playerStates ??= GetComponent<PlayerStates>();
         CacheChoiceControls();
     }
 
@@ -97,7 +98,7 @@ public sealed class DialogueManager : MonoBehaviour
             return false;
         }
 
-        if (!inkFileManager.TryGetConversation(conversationKey, dialogueProgress, out InkFileManager.ConversationBranch conversation))
+        if (!inkFileManager.TryGetConversation(conversationKey, dialogueProgress, playerStates, out InkFileManager.ConversationBranch conversation))
         {
             Debug.LogError($"Conversation '{conversationKey}' is missing, has no Ink file, or its conditions are not met.", this);
             return false;
@@ -114,7 +115,7 @@ public sealed class DialogueManager : MonoBehaviour
             return false;
         }
 
-        if (!inkFileManager.TryGetBestConversation(candidateKeys, dialogueProgress, out InkFileManager.ConversationBranch conversation))
+        if (!inkFileManager.TryGetBestConversation(candidateKeys, dialogueProgress, playerStates, out InkFileManager.ConversationBranch conversation))
         {
             Debug.LogWarning("No eligible conversation is available for this NPC.", this);
             return false;
@@ -142,7 +143,7 @@ public sealed class DialogueManager : MonoBehaviour
         StopActiveLine();
         currentStory = new Story(inkJson.text);
         BindProgressFunctions();
-        ApplyPersistentStatsToInk();
+        ApplyPersistentStatesToInk();
         dialogueState.Reset();
         DialogueIsPlaying = true;
         SetDialogueVisible(true);
@@ -415,48 +416,57 @@ public sealed class DialogueManager : MonoBehaviour
 
     private void BindProgressFunctions()
     {
-        if (currentStory == null || dialogueProgress == null)
+        if (currentStory == null)
         {
             return;
         }
 
-        currentStory.BindExternalFunction<string>("GetStat", statName => dialogueProgress.GetStat(statName));
-        currentStory.BindExternalFunction<string, int>("AddStat", (statName, amount) => dialogueProgress.AddStat(statName, amount));
-        currentStory.BindExternalFunction<string>("HasFlag", flag => dialogueProgress.HasFlag(flag));
-        currentStory.BindExternalFunction<string>("SetFlag", flag => dialogueProgress.SetFlag(flag));
+        if (dialogueProgress != null)
+        {
+            currentStory.BindExternalFunction<string>("HasFlag", flag => dialogueProgress.HasFlag(flag));
+            currentStory.BindExternalFunction<string>("SetFlag", flag => dialogueProgress.SetFlag(flag));
+        }
+
+        if (playerStates != null)
+        {
+            currentStory.BindExternalFunction<string>("HasState", stateName => playerStates.IsActive(stateName));
+            currentStory.BindExternalFunction<string, bool>("SetState", (stateName, isActive) => playerStates.SetActive(stateName, isActive));
+        }
     }
 
-    private void ApplyPersistentStatsToInk()
+    private void ApplyPersistentStatesToInk()
     {
-        if (currentStory == null || dialogueProgress == null)
+        if (currentStory == null || playerStates == null)
         {
             return;
         }
 
-        foreach (string statName in PersistentStatNames)
+        foreach (PlayerEmotionalState state in Enum.GetValues(typeof(PlayerEmotionalState)))
         {
-            if (currentStory.variablesState.GlobalVariableExistsWithName(statName))
+            string variableName = state.ToString();
+            if (currentStory.variablesState.GlobalVariableExistsWithName(variableName))
             {
-                currentStory.variablesState[statName] = dialogueProgress.GetStat(statName);
+                currentStory.variablesState[variableName] = playerStates.IsActive(state);
             }
         }
     }
 
-    private void CaptureInkStats()
+    private void CaptureInkStates()
     {
-        if (currentStory == null || dialogueProgress == null)
+        if (currentStory == null || playerStates == null)
         {
             return;
         }
 
-        foreach (string statName in PersistentStatNames)
+        foreach (PlayerEmotionalState state in Enum.GetValues(typeof(PlayerEmotionalState)))
         {
-            if (currentStory.variablesState.GlobalVariableExistsWithName(statName))
+            string variableName = state.ToString();
+            if (currentStory.variablesState.GlobalVariableExistsWithName(variableName))
             {
-                object value = currentStory.variablesState[statName];
-                if (value is int intValue)
+                object value = currentStory.variablesState[variableName];
+                if (value is bool boolValue)
                 {
-                    dialogueProgress.SetStat(statName, intValue);
+                    playerStates.SetActive(state, boolValue);
                 }
             }
         }
@@ -464,7 +474,7 @@ public sealed class DialogueManager : MonoBehaviour
 
     private void FinishConversation()
     {
-        CaptureInkStats();
+        CaptureInkStates();
 
         string nextConversationKey = null;
         if (currentStory != null && currentStory.variablesState.GlobalVariableExistsWithName("nextBranch"))
@@ -478,7 +488,7 @@ public sealed class DialogueManager : MonoBehaviour
         }
 
         if (!string.IsNullOrWhiteSpace(nextConversationKey) && inkFileManager != null &&
-            inkFileManager.TryGetConversation(nextConversationKey, dialogueProgress, out InkFileManager.ConversationBranch nextConversation))
+            inkFileManager.TryGetConversation(nextConversationKey, dialogueProgress, playerStates, out InkFileManager.ConversationBranch nextConversation))
         {
             BeginConversation(nextConversation);
             return;
