@@ -36,6 +36,7 @@ public sealed class TypingInteractable : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerInRange = true;
+            Debug.Log("player in range");
         }
     }
 
