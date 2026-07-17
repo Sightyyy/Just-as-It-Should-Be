@@ -9,6 +9,7 @@ public sealed class OxfordTypingDictionary : MonoBehaviour
     [SerializeField] private int maximumWordLength = 12;
 
     private readonly List<string> words = new List<string>();
+    private string lastWord;
 
     private static readonly string[] FallbackWords =
     {
@@ -56,7 +57,20 @@ public sealed class OxfordTypingDictionary : MonoBehaviour
             Reload();
         }
 
-        return words[UnityEngine.Random.Range(0, words.Count)];
+        string word = words[UnityEngine.Random.Range(0, words.Count)];
+
+        if (words.Count > 1)
+        {
+            int attempts = 0;
+            while (word == lastWord && attempts < 10)
+            {
+                word = words[UnityEngine.Random.Range(0, words.Count)];
+                attempts++;
+            }
+        }
+
+        lastWord = word;
+        return word;
     }
 
     private void TryAddWord(string rawWord)

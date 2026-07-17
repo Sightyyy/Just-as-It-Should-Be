@@ -13,6 +13,8 @@ public sealed class NpcDialogueTrigger : MonoBehaviour
 
     private void Update()
     {
+        if (TypingMiniGameController.IsAnyMinigameActive) return;
+
         if (dialogueManager == null || player == null || dialogueManager.DialogueIsPlaying)
         {
             return;

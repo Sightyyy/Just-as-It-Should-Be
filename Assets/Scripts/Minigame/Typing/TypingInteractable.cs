@@ -10,14 +10,20 @@ public sealed class TypingInteractable : MonoBehaviour
 
     void Awake()
     {
-        typingMiniGame ??= FindObjectOfType<TypingMiniGameController>();
-        SetPrompt(false);
+        typingMiniGame ??= FindAnyObjectByType<TypingMiniGameController>();
+        //SetPrompt(false);
     }
 
     void Update()
     {
+        if (TypingMiniGameController.IsAnyMinigameActive)
+        {
+            //SetPrompt(false);
+            return;
+        }
+
         bool canInteract = playerInRange && typingMiniGame != null && typingMiniGame.CanInteract();
-        SetPrompt(canInteract);
+        //SetPrompt(canInteract);
 
         if (canInteract && Input.GetKeyDown(interactKey))
         {
@@ -38,15 +44,15 @@ public sealed class TypingInteractable : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             playerInRange = false;
-            SetPrompt(false);
+            //SetPrompt(false);
         }
     }
 
-    private void SetPrompt(bool active)
-    {
-        if (interactPrompt != null)
-        {
-            interactPrompt.SetActive(active);
-        }
-    }
+    //private void SetPrompt(bool active)
+    //{
+    //    if (interactPrompt != null)
+    //    {
+    //        interactPrompt.SetActive(active);
+    //    }
+    //}
 }
