@@ -21,6 +21,8 @@ public class RealmManager : MonoBehaviour
 
     void Update()
     {
+        if (GameplayInputLock.IsLocked) return;
+
         if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.RightArrow))
         {
             ActivateRealm(Realm.Inner);

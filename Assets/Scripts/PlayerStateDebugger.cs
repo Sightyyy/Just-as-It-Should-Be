@@ -15,7 +15,8 @@ public sealed class PlayerStateDebugger : MonoBehaviour
     [SerializeField] private List<StateKeyBinding> stateKeyBindings = new List<StateKeyBinding>();
     [SerializeField] private KeyCode resetAllKey = KeyCode.Backspace;
     [SerializeField] private bool logToConsole = true;
-    [SerializeField] private bool showOnScreenDebugList = true;
+    [SerializeField] private bool enableLegacyHotkeys;
+    [SerializeField] private bool showOnScreenDebugList;
 
     void Reset()
     {
@@ -39,6 +40,7 @@ public sealed class PlayerStateDebugger : MonoBehaviour
     void Update()
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!enableLegacyHotkeys) return;
         if (TypingMiniGameController.IsAnyMinigameActive) return;
 
         if (playerStates == null)
@@ -82,7 +84,7 @@ public sealed class PlayerStateDebugger : MonoBehaviour
     }
 #endif
 
-    private void ToggleState(PlayerEmotionalState state)
+    public void ToggleState(PlayerEmotionalState state)
     {
         bool newValue = !playerStates.IsActive(state);
         playerStates.SetActive(state, newValue);
@@ -93,7 +95,7 @@ public sealed class PlayerStateDebugger : MonoBehaviour
         }
     }
 
-    private void ResetAllStates()
+    public void ResetAllStates()
     {
         foreach (PlayerEmotionalState state in (PlayerEmotionalState[])Enum.GetValues(typeof(PlayerEmotionalState)))
         {

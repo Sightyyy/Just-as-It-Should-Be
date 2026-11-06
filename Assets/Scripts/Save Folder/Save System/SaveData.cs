@@ -14,6 +14,11 @@ public class SaveData
     public int level;
 
     public float playTime;
+    public int activeWoundCount;
+    public int totalPatchedWounds;
+    public int convincingDamageLevel;
+    public int feelingsFortificationLevel;
+    public int clearMindLevel;
 
     public List<string> activeStates = new();
     public List<string> storyFlags = new();

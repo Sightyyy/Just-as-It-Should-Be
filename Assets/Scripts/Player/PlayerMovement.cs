@@ -21,7 +21,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        if (!canControl)
+        if (!canControl || GameplayInputLock.IsLocked)
         {
             input = Vector2.zero;
 
@@ -43,7 +43,7 @@ public class PlayerMovement : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (!canControl)
+        if (!canControl || GameplayInputLock.IsLocked)
         {
             rb.linearVelocity = Vector2.zero;
             return;

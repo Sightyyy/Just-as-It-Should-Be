@@ -175,9 +175,75 @@ I think I'm gonna give Chef Tan a visit
 -> visitRamenShop
 
 ==continueFired==
-test
+Sigh...
+~ Depressed = true
+I don't know what to do anymore
+Is...
+Is everything worth a try anymore?
+...
+I lost my parents
+My brother won't even acknowledge me
+And now...
+I lost my job that I took years to be accepted
+...
+#Auto walk to ramen shop
+#If player succeed curing the depression, force the state to neutral
+#If player failed, go to Prologue_suicide.ink
+...
+Ah, it's Chef Tan's
+I guess I'm gonna pay Chef Tan one last visit
 -> visitRamenShop
 
 ==visitRamenShop==
-test
+#player
+Hey, Chef Tan
+The usual please
+
+#Chef
+Right away!
+
+#check for flags on getting fired or not
+#player got fired
+Hey, Itsuki, you're showing your bad aura
+Is there something wrong?
+
+#player
+You really can see through me, huh old man?
+I guess I can't really hide it anymore
+
+#chef
+From your face, did something happened at your work?
+
+#player
+I...
+I got fired
+
+#chef
+Ah, you got fired
+Wait-
+Fired?
+Why?
+
+#player
+I was just resting my eyes after so many days taking overtime because of this one boss i got
+I guess... he just didn't really like me
+I did everything i can for the company and he took all the credit
+But alas, i can't fight the boss
+Neither my coworkers can fight him
+
+#chef
+Sigh...
+In the end you got yourself in a very sorry state
+I do warn you about it like 4 or 5 years ago about that company
+And yet you won't listen any of it
+You keep saying you're gonna be fine, nothing bad's gonna happen to you
+...
+Now look at you
+Do you believe me now?
+
+#player didn't get fired
+Itsuki, you seems very in high spirits
+Is there something happened?
+Might as well share with your old pal
+Haha!
 -> DONE

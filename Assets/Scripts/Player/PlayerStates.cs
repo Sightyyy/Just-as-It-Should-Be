@@ -11,6 +11,7 @@ public enum PlayerEmotionalState
     Afraid,
     Sad,
     Depressed,
+    DeathEnding,
     Traumatized
 }
 

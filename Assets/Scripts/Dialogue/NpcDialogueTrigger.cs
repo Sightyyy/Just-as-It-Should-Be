@@ -20,7 +20,7 @@ public sealed class NpcDialogueTrigger : MonoBehaviour
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.T) && Vector2.Distance(player.position, transform.position) <= interactionRange)
+        if (Input.GetKeyDown(KeyCode.Z) && Vector2.Distance(player.position, transform.position) <= interactionRange)
         {
             if (possibleConversationKeys.Count > 0)
             {

@@ -11,6 +11,7 @@ public sealed class TypingMiniGameController : MonoBehaviour
     [SerializeField] private PlayerStates playerStates;
     [SerializeField] private RealmManager realmManager;
     [SerializeField] private OxfordTypingDictionary dictionary;
+    [SerializeField] private SkillUpgradeManager skillUpgradeManager;
     [SerializeField] private List<PlayerMovement> playerMovements = new List<PlayerMovement>();
 
     [Header("Monsters")]
@@ -59,12 +60,19 @@ public sealed class TypingMiniGameController : MonoBehaviour
     {
         playerStates ??= PlayerStates.Instance;
         dictionary ??= GetComponent<OxfordTypingDictionary>();
+        skillUpgradeManager ??= SkillUpgradeManager.Instance;
+
+        if (playerMovements.Count == 0)
+        {
+            playerMovements.AddRange(FindObjectsByType<PlayerMovement>(FindObjectsInactive.Exclude));
+        }
     }
 
     void OnDestroy()
     {
         if (isTypingActive)
         {
+            GameplayInputLock.Unlock(this);
             IsAnyMinigameActive = false;
             SetAllPlayerMovementControl(true);
         }
@@ -74,6 +82,14 @@ public sealed class TypingMiniGameController : MonoBehaviour
     {
         isTypingActive = value;
         IsAnyMinigameActive = value;
+        if (value)
+        {
+            GameplayInputLock.Lock(this);
+        }
+        else
+        {
+            GameplayInputLock.Unlock(this);
+        }
         SetAllPlayerMovementControl(!value);
     }
 
@@ -108,6 +124,8 @@ public sealed class TypingMiniGameController : MonoBehaviour
 
     public bool CanInteract()
     {
+        if (PatchingUpMinigameController.HasAnyActiveWounds) return false;
+
         return GetNextLivingEncounter() != null;
     }
 
@@ -246,6 +264,12 @@ public sealed class TypingMiniGameController : MonoBehaviour
             return;
         }
 
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            StopTyping();
+            return;
+        }
+
         string frameInput = Input.inputString;
         if (!string.IsNullOrEmpty(frameInput))
         {
@@ -263,12 +287,12 @@ public sealed class TypingMiniGameController : MonoBehaviour
             if (changed)
             {
                 UpdateLiveWordColoring();
+                if (typedSoFar.Length >= currentWord.Length)
+                {
+                    SubmitTypedWord();
+                    return;
+                }
             }
-        }
-
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
-        {
-            SubmitTypedWord();
         }
     }
 
@@ -279,7 +303,8 @@ public sealed class TypingMiniGameController : MonoBehaviour
             return;
         }
 
-        int damage = accuracyTracker.RecordAttempt(currentWord, typedSoFar);
+        int correctLetters = accuracyTracker.RecordAttempt(currentWord, typedSoFar);
+        int damage = correctLetters * GetTypingDamagePerCorrectLetter();
         currentEncounter.Monster.Damage(damage);
 
         if (currentEncounter.Monster.IsDead)
@@ -353,6 +378,16 @@ public sealed class TypingMiniGameController : MonoBehaviour
     private bool ShouldRegenerateMonsters()
     {
         return realmManager != null && realmManager.CurrentRealm == RealmManager.Realm.Real;
+    }
+
+    private int GetTypingDamagePerCorrectLetter()
+    {
+        if (skillUpgradeManager == null)
+        {
+            skillUpgradeManager = SkillUpgradeManager.Instance;
+        }
+
+        return skillUpgradeManager != null ? skillUpgradeManager.TypingDamagePerCorrectLetter : 1;
     }
 
     private void RegenerateAllMonsters(float deltaTime)

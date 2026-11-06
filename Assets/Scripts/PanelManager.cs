@@ -5,6 +5,7 @@ public class PanelManager : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject mapPanel;
+    [SerializeField] private MapController mapController;
     [SerializeField] private GameObject skillPanel;
     [SerializeField] private GameObject questListPanel;
 
@@ -13,30 +14,43 @@ public class PanelManager : MonoBehaviour
     [SerializeField] private PlayerMovement innerPlayer;
 
     private bool isPaused;
+    private bool isSkillOpen;
 
     void Start()
     {
         SetPanelActive(pausePanel, false);
-        SetPanelActive(mapPanel, false);
-        SetPanelActive(skillPanel, false);
+        SetMapOpen(false);
+        SetSkillOpen(false);
         SetPanelActive(questListPanel, false);
     }
 
     void Update()
     {
+        if (isSkillOpen)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P) || Input.GetKeyDown(KeyCode.B))
+            {
+                SetSkillOpen(false);
+            }
+
+            CloseWorldLockedPanels();
+            return;
+        }
+
+        if (TypingMiniGameController.IsAnyMinigameActive || GameplayInputLock.IsLocked)
+        {
+            CloseWorldLockedPanels();
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             TogglePause();
         }
 
-        if (Input.GetKeyDown(KeyCode.M))
+        if ((Input.GetKeyDown(KeyCode.P) || Input.GetKeyDown(KeyCode.B)) && IsControllingInnerSelf())
         {
-            TogglePanel(mapPanel);
-        }
-
-        if (Input.GetKeyDown(KeyCode.P) && IsControllingInnerSelf())
-        {
-            TogglePanel(skillPanel);
+            SetSkillOpen(!isSkillOpen);
         }
 
         if (Input.GetKeyDown(KeyCode.J) && IsControllingRealLife())
@@ -63,14 +77,23 @@ public class PanelManager : MonoBehaviour
 
     public void ToggleMap()
     {
-        TogglePanel(mapPanel);
+        if (mapController == null) return;
+
+        mapController.ToggleMap();
+    }
+
+    private void SetMapOpen(bool open)
+    {
+        if (mapController == null) return;
+
+        mapController.SetMapOpen(open);
     }
 
     public void ToggleSkill()
     {
         if (!IsControllingInnerSelf()) return;
 
-        TogglePanel(skillPanel);
+        SetSkillOpen(!isSkillOpen);
     }
 
     public void ToggleQuestList()
@@ -99,7 +122,7 @@ public class PanelManager : MonoBehaviour
 
         if (!IsControllingInnerSelf())
         {
-            SetPanelActive(skillPanel, false);
+            SetSkillOpen(false);
         }
     }
 
@@ -117,11 +140,28 @@ public class PanelManager : MonoBehaviour
         panel.SetActive(active);
     }
 
+    private void SetSkillOpen(bool active)
+    {
+        isSkillOpen = active;
+        SetPanelActive(skillPanel, active);
+
+        if (active)
+        {
+            GameplayInputLock.Lock(this);
+        }
+        else
+        {
+            GameplayInputLock.Unlock(this);
+        }
+    }
+
     void OnDestroy()
     {
         if (isPaused)
         {
             Time.timeScale = 1f;
         }
+
+        GameplayInputLock.Unlock(this);
     }
 }
