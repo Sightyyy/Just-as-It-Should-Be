@@ -3,8 +3,6 @@ using UnityEngine;
 public sealed class PatchingInteractable : MonoBehaviour
 {
     [SerializeField] private PatchingUpMinigameController patchingMinigame;
-    [SerializeField] private PlayerStates playerStates;
-    [SerializeField] private KeyCode interactKey = KeyCode.E;
     [SerializeField] private GameObject interactPrompt;
 
     private bool playerInRange;
@@ -12,16 +10,31 @@ public sealed class PatchingInteractable : MonoBehaviour
     void Awake()
     {
         patchingMinigame ??= FindAnyObjectByType<PatchingUpMinigameController>();
-        playerStates ??= PlayerStates.Instance;
         SetPrompt(false);
     }
 
     void Update()
     {
-        bool canInteract = playerInRange && CanInteractWithCurrentState();
-        SetPrompt(canInteract);
+        if (GameplayInputLock.IsLocked || TypingMiniGameController.IsAnyMinigameActive)
+        {
+            if (patchingMinigame != null && patchingMinigame.IsPatchingActive)
+            {
+                patchingMinigame.StopPatching();
+            }
 
-        if (canInteract && Input.GetKeyDown(interactKey))
+            SetPrompt(false);
+            return;
+        }
+
+        bool canInteract = playerInRange
+            && patchingMinigame != null
+            && patchingMinigame.CanBeginPatching();
+
+        SetPrompt(canInteract || (patchingMinigame != null && patchingMinigame.IsPatchingActive));
+
+        if (canInteract
+            && !patchingMinigame.IsPatchingActive
+            && Input.GetKey(patchingMinigame.PatchKey))
         {
             patchingMinigame.BeginPatching();
         }
@@ -43,21 +56,6 @@ public sealed class PatchingInteractable : MonoBehaviour
             SetPrompt(false);
             patchingMinigame?.StopPatching();
         }
-    }
-
-    private bool CanInteractWithCurrentState()
-    {
-        if (playerStates == null)
-        {
-            playerStates = PlayerStates.Instance;
-        }
-
-        return playerStates != null
-            && patchingMinigame != null
-            && patchingMinigame.CanBeginPatching()
-            && (playerStates.IsActive(PlayerEmotionalState.Afraid)
-                || playerStates.IsActive(PlayerEmotionalState.Sad)
-                || playerStates.IsActive(PlayerEmotionalState.Depressed));
     }
 
     private void SetPrompt(bool active)

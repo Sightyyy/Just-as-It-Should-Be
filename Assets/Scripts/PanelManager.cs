@@ -37,9 +37,17 @@ public class PanelManager : MonoBehaviour
             return;
         }
 
+        if (PatchingUpMinigameController.IsAnyPatchingActive)
+        {
+            SetSkillOpen(false);
+            SetPanelActive(questListPanel, false);
+            return;
+        }
+
         if (TypingMiniGameController.IsAnyMinigameActive || GameplayInputLock.IsLocked)
         {
-            CloseWorldLockedPanels();
+            SetSkillOpen(false);
+            SetPanelActive(questListPanel, false);
             return;
         }
 

@@ -79,6 +79,8 @@ public sealed class DialogueManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        GameplayInputLock.Unlock(this);
+
         if (Instance == this)
         {
             Instance = null;
@@ -146,6 +148,7 @@ public sealed class DialogueManager : MonoBehaviour
         ApplyPersistentStatesToInk();
         dialogueState.Reset();
         DialogueIsPlaying = true;
+        GameplayInputLock.Lock(this);
         SetDialogueVisible(true);
         HideChoices();
 
@@ -374,6 +377,7 @@ public sealed class DialogueManager : MonoBehaviour
     {
         StopActiveLine();
         DialogueIsPlaying = false;
+        GameplayInputLock.Unlock(this);
         currentStory = null;
         activeConversation = null;
         dialogueState.Reset();

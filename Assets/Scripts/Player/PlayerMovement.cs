@@ -30,8 +30,8 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        input.x = Input.GetAxisRaw("Horizontal");
-        input.y = Input.GetAxisRaw("Vertical");
+        input.x = ReadAxis(KeyCode.LeftArrow, KeyCode.RightArrow);
+        input.y = ReadAxis(KeyCode.DownArrow, KeyCode.UpArrow);
 
         if (input.magnitude > 1)
         {
@@ -39,6 +39,16 @@ public class PlayerMovement : MonoBehaviour
         }
 
         UpdateAnimation(input);
+    }
+
+    private static float ReadAxis(KeyCode negative, KeyCode positive)
+    {
+        float value = 0f;
+
+        if (Input.GetKey(negative)) value -= 1f;
+        if (Input.GetKey(positive)) value += 1f;
+
+        return value;
     }
 
     void FixedUpdate()

@@ -9,7 +9,6 @@ public sealed class TypingMiniGameController : MonoBehaviour
 {
     [Header("Dependencies")]
     [SerializeField] private PlayerStates playerStates;
-    [SerializeField] private RealmManager realmManager;
     [SerializeField] private OxfordTypingDictionary dictionary;
     [SerializeField] private SkillUpgradeManager skillUpgradeManager;
     [SerializeField] private List<PlayerMovement> playerMovements = new List<PlayerMovement>();
@@ -38,6 +37,20 @@ public sealed class TypingMiniGameController : MonoBehaviour
         PlayerEmotionalState.Depressed,
         PlayerEmotionalState.Sad,
         PlayerEmotionalState.Afraid
+    };
+
+    private static readonly PlayerEmotionalState[] NegativeMoodStates =
+    {
+        PlayerEmotionalState.Afraid,
+        PlayerEmotionalState.Sad,
+        PlayerEmotionalState.Depressed
+    };
+
+    private static readonly PlayerEmotionalState[] PositiveMoodStates =
+    {
+        PlayerEmotionalState.Happy,
+        PlayerEmotionalState.Confident,
+        PlayerEmotionalState.Neutral
     };
 
     private readonly TypingAccuracyTracker accuracyTracker = new TypingAccuracyTracker();
@@ -115,7 +128,7 @@ public sealed class TypingMiniGameController : MonoBehaviour
         {
             HandleTypingInput();
         }
-        else if (ShouldRegenerateMonsters())
+        else
         {
             RegenerateAllMonsters(Time.deltaTime);
             RefreshUI();
@@ -364,20 +377,31 @@ public sealed class TypingMiniGameController : MonoBehaviour
 
     private void ApplyPostEncounterRewards(float accuracy)
     {
+        if (playerStates == null) return;
+
+        ClearMoodStates(NegativeMoodStates);
+        ClearMoodStates(PositiveMoodStates);
+
         if (accuracy >= 95f)
         {
-            playerStates?.SetActive(PlayerEmotionalState.Confident, true);
-            playerStates?.SetActive(PlayerEmotionalState.Traumatized, false);
+            playerStates.SetActive(PlayerEmotionalState.Traumatized, false);
+            playerStates.SetActive(PlayerEmotionalState.Confident, true);
+            return;
         }
-        else if (accuracy >= 75f)
-        {
-            playerStates?.SetActive(PlayerEmotionalState.Neutral, true);
-        }
+
+        PlayerEmotionalState reward = accuracy >= 75f
+            ? PlayerEmotionalState.Happy
+            : PlayerEmotionalState.Neutral;
+
+        playerStates.SetActive(reward, true);
     }
 
-    private bool ShouldRegenerateMonsters()
+    private void ClearMoodStates(PlayerEmotionalState[] states)
     {
-        return realmManager != null && realmManager.CurrentRealm == RealmManager.Realm.Real;
+        foreach (PlayerEmotionalState state in states)
+        {
+            playerStates.SetActive(state, false);
+        }
     }
 
     private int GetTypingDamagePerCorrectLetter()

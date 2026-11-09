@@ -21,14 +21,14 @@ public class RealmManager : MonoBehaviour
 
     void Update()
     {
-        if (GameplayInputLock.IsLocked) return;
+        if (CanSwitchRealm() == false) return;
 
-        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.RightArrow))
+        if (Input.GetKeyDown(KeyCode.E))
         {
             ActivateRealm(Realm.Inner);
         }
 
-        if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.LeftArrow))
+        if (Input.GetKeyDown(KeyCode.Q))
         {
             ActivateRealm(Realm.Real);
         }
@@ -36,6 +36,9 @@ public class RealmManager : MonoBehaviour
 
     public void ActivateRealm(Realm realm)
     {
+        if (realm == CurrentRealm) return;
+        if (CanSwitchRealm() == false) return;
+
         if (realm == Realm.Real)
         {
             ActivateReal();
@@ -44,6 +47,13 @@ public class RealmManager : MonoBehaviour
         {
             ActivateInner();
         }
+    }
+
+    private static bool CanSwitchRealm()
+    {
+        return !GameplayInputLock.IsLocked
+            && !TypingMiniGameController.IsAnyMinigameActive
+            && !PatchingUpMinigameController.IsAnyPatchingActive;
     }
 
     public void ActivateReal()

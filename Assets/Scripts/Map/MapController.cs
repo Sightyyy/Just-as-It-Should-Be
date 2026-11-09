@@ -54,7 +54,7 @@ public class MapController : MonoBehaviour
     {
         HandleToggle();
 
-        if (IsOpen && !IsInAllowedRealm())
+        if (IsOpen && (GameplayInputLock.IsLocked || !IsInAllowedRealm()))
         {
             SetMapOpen(false);
         }
@@ -68,13 +68,15 @@ public class MapController : MonoBehaviour
 
     void HandleToggle()
     {
-        if (!handleInputToggle || !Input.GetKeyDown(KeyCode.M)) return;
+        if (!handleInputToggle || GameplayInputLock.IsLocked || !Input.GetKeyDown(KeyCode.M)) return;
 
         ToggleMap();
     }
 
     public void ToggleMap()
     {
+        if (GameplayInputLock.IsLocked) return;
+
         if (!IsOpen && !IsInAllowedRealm())
         {
             return;
@@ -87,7 +89,7 @@ public class MapController : MonoBehaviour
     {
         if (mapPanel == null) return;
 
-        if (open && !IsInAllowedRealm())
+        if (open && (GameplayInputLock.IsLocked || !IsInAllowedRealm()))
         {
             open = false;
         }

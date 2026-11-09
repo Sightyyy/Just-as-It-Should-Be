@@ -11,14 +11,21 @@ public sealed class NpcDialogueTrigger : MonoBehaviour
     [SerializeField] private string defaultConversationKey = "First_Conversation";
     [SerializeField, Min(0.1f)] private float interactionRange = 2f;
 
+    private PlayerMovement playerMovement;
+
     private void Update()
     {
+        if (GameplayInputLock.IsLocked) return;
         if (TypingMiniGameController.IsAnyMinigameActive) return;
+        if (PatchingUpMinigameController.IsAnyPatchingActive) return;
 
         if (dialogueManager == null || player == null || dialogueManager.DialogueIsPlaying)
         {
             return;
         }
+
+        playerMovement ??= player.GetComponent<PlayerMovement>();
+        if (playerMovement != null && !playerMovement.CanControl) return;
 
         if (Input.GetKeyDown(KeyCode.Z) && Vector2.Distance(player.position, transform.position) <= interactionRange)
         {

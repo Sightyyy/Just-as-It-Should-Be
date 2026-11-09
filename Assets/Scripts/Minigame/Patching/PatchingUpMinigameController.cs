@@ -30,6 +30,7 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI patchedCountText;
     [SerializeField] private KeyCode patchKey = KeyCode.Z;
     [SerializeField] private float holdSecondsToPatch = 5f;
+    [SerializeField] private float holdSecondsToCleanFuzzy = 3f;
 
     private static readonly PlayerEmotionalState[] WoundStatesInPriorityOrder =
     {
@@ -42,6 +43,8 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
 
     private float woundTimer;
     private float patchHoldTimer;
+    private float cleanHoldTimer;
+    private bool awaitingPatchHold;
     private int spawnPointIndex;
     private int totalPatchedWounds;
     private bool isPatchingActive;
@@ -50,7 +53,9 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
     public int TotalPatchedWounds => totalPatchedWounds;
     public bool HasPatchableWound => GetNextWound() != null && GetNextWound().IsPatchable;
     public bool IsPatchingActive => isPatchingActive;
+    public KeyCode PatchKey => patchKey;
     public static bool HasAnyActiveWounds { get; private set; }
+    public static bool IsAnyPatchingActive { get; private set; }
 
     void Reset()
     {
@@ -84,6 +89,8 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
         {
             HasAnyActiveWounds = false;
         }
+
+        IsAnyPatchingActive = false;
     }
 
     void Start()
@@ -97,8 +104,21 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
         WoundConditionRule currentRule = GetCurrentRule();
         if (currentRule == null)
         {
-            ResetPatchingProgress();
+            if (isPatchingActive)
+            {
+                StopPatching();
+            }
+            else
+            {
+                ResetPatchingProgress();
+            }
+
             return;
+        }
+
+        if (isPatchingActive && !IsInInnerRealm())
+        {
+            StopPatching();
         }
 
         GenerateWounds(currentRule);
@@ -120,14 +140,18 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
     public void BeginPatching()
     {
         if (!CanBeginPatching()) return;
+        if (GameplayInputLock.IsLocked || TypingMiniGameController.IsAnyMinigameActive) return;
+        if (!IsInInnerRealm()) return;
 
         isPatchingActive = true;
+        IsAnyPatchingActive = true;
         SetPatchingPanel(true);
     }
 
     public void StopPatching()
     {
         isPatchingActive = false;
+        IsAnyPatchingActive = false;
         ResetPatchingProgress();
         fuzzyCleaning?.Cancel();
         SetPatchingPanel(false);
@@ -170,7 +194,7 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
 
     private void GenerateWounds(WoundConditionRule rule)
     {
-        if (realmManager != null && realmManager.CurrentRealm != RealmManager.Realm.Inner) return;
+        if (!IsInInnerRealm()) return;
 
         woundTimer += Time.deltaTime * (1f - GetEmotionalDamageResistance());
         float interval = GetAdjustedWoundInterval(rule);
@@ -196,13 +220,22 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
 
         if (wound.HasFuzzy)
         {
-            if (fuzzyCleaning != null && !fuzzyCleaning.IsActive)
-            {
-                fuzzyCleaning.Begin(wound);
-            }
-
-            ResetPatchingProgress();
+            HandleFuzzyStage(wound);
             return;
+        }
+
+        if (fuzzyCleaning != null && fuzzyCleaning.IsActive)
+        {
+            fuzzyCleaning.Finish();
+        }
+
+        // The cleaning hold must be released before the same key can patch.
+        if (awaitingPatchHold)
+        {
+            if (Input.GetKey(patchKey)) return;
+
+            awaitingPatchHold = false;
+            patchHoldTimer = 0f;
         }
 
         if (Input.GetKey(patchKey))
@@ -220,6 +253,36 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
         }
     }
 
+    // Step 1 of patching: hold Z to clear the fuzzy layer.
+    private void HandleFuzzyStage(PatchingWound wound)
+    {
+        if (fuzzyCleaning != null && !fuzzyCleaning.IsActive)
+        {
+            fuzzyCleaning.Begin(patchKey);
+        }
+
+        if (!Input.GetKey(patchKey))
+        {
+            cleanHoldTimer = 0f;
+            fuzzyCleaning?.SetProgress(0f, patchKey);
+            return;
+        }
+
+        cleanHoldTimer += Time.deltaTime;
+        float progress = cleanHoldTimer / Mathf.Max(0.1f, holdSecondsToCleanFuzzy);
+        fuzzyCleaning?.SetProgress(progress, patchKey);
+
+        if (cleanHoldTimer < holdSecondsToCleanFuzzy) return;
+
+        wound.CleanFuzzy();
+
+        cleanHoldTimer = 0f;
+        patchHoldTimer = 0f;
+        awaitingPatchHold = true;
+        fuzzyCleaning?.Finish();
+    }
+
+    // Step 2 of patching: hold Z again to close the wound.
     private void PatchWound(PatchingWound wound)
     {
         if (wound == null || wound.HasFuzzy) return;
@@ -233,6 +296,8 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
 
         totalPatchedWounds++;
         patchHoldTimer = 0f;
+        cleanHoldTimer = 0f;
+        awaitingPatchHold = false;
     }
 
     private void EvaluateEscalation(WoundConditionRule rule)
@@ -326,11 +391,21 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
     private void ResetPatchingProgress()
     {
         patchHoldTimer = 0f;
+        cleanHoldTimer = 0f;
+        awaitingPatchHold = false;
+
         if (wounds.Count == 0)
         {
             isPatchingActive = false;
+            IsAnyPatchingActive = false;
             SetPatchingPanel(false);
+            fuzzyCleaning?.Cancel();
         }
+    }
+
+    private bool IsInInnerRealm()
+    {
+        return realmManager == null || realmManager.CurrentRealm == RealmManager.Realm.Inner;
     }
 
     private void ClearWounds()
@@ -345,6 +420,8 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
 
         wounds.Clear();
         patchHoldTimer = 0f;
+        cleanHoldTimer = 0f;
+        awaitingPatchHold = false;
         woundTimer = 0f;
     }
 
@@ -352,7 +429,12 @@ public sealed class PatchingUpMinigameController : MonoBehaviour
     {
         if (patchProgressSlider != null)
         {
-            patchProgressSlider.value = patchHoldTimer / Mathf.Max(0.1f, holdSecondsToPatch);
+            PatchingWound wound = GetNextWound();
+            patchProgressSlider.value = wound == null
+                ? 0f
+                : wound.HasFuzzy
+                    ? cleanHoldTimer / Mathf.Max(0.1f, holdSecondsToCleanFuzzy)
+                    : patchHoldTimer / Mathf.Max(0.1f, holdSecondsToPatch);
         }
 
         if (woundCountText != null)

@@ -7,73 +7,44 @@ public sealed class FuzzyCleaningChallenge : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private TextMeshProUGUI promptText;
     [SerializeField] private Slider progressSlider;
-    [SerializeField] private KeyCode requiredKey = KeyCode.RightArrow;
-    [SerializeField] private int requiredPresses = 5;
 
-    private int currentPresses;
-    private PatchingWound targetWound;
-    private bool isActive;
-
-    public bool IsActive => isActive;
+    public bool IsActive { get; private set; }
 
     void Start()
     {
-        SetPanel(false);
-        RefreshUI();
+        Cancel();
     }
 
-    void Update()
+    public void Begin(KeyCode holdKey)
     {
-        if (!isActive) return;
+        IsActive = true;
+        SetPanel(true);
+        SetProgress(0f, holdKey);
+    }
 
-        if (Input.GetKeyDown(requiredKey))
+    public void SetProgress(float normalized, KeyCode holdKey)
+    {
+        if (progressSlider != null)
         {
-            currentPresses++;
-            RefreshUI();
+            progressSlider.value = Mathf.Clamp01(normalized);
+        }
 
-            if (currentPresses >= requiredPresses)
-            {
-                Complete();
-            }
+        if (promptText != null)
+        {
+            promptText.text = $"Hold {holdKey}";
         }
     }
 
-    public void Begin(PatchingWound wound)
+    public void Finish()
     {
-        if (wound == null || !wound.HasFuzzy) return;
-
-        targetWound = wound;
-        currentPresses = 0;
-        isActive = true;
-        SetPanel(true);
-        RefreshUI();
+        IsActive = false;
+        SetPanel(false);
     }
 
     public void Cancel()
     {
-        targetWound = null;
-        currentPresses = 0;
-        isActive = false;
+        IsActive = false;
         SetPanel(false);
-    }
-
-    private void Complete()
-    {
-        targetWound?.CleanFuzzy();
-        Cancel();
-    }
-
-    private void RefreshUI()
-    {
-        if (promptText != null)
-        {
-            promptText.text = $"{requiredKey} {currentPresses}/{Mathf.Max(1, requiredPresses)}";
-        }
-
-        if (progressSlider != null)
-        {
-            progressSlider.value = (float)currentPresses / Mathf.Max(1, requiredPresses);
-        }
     }
 
     private void SetPanel(bool active)
