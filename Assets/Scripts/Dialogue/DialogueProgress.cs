@@ -8,6 +8,8 @@ public sealed class DialogueProgress : MonoBehaviour
 
     public static DialogueProgress Instance { get; private set; }
 
+    public event Action<string> FlagChanged;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -47,9 +49,9 @@ public sealed class DialogueProgress : MonoBehaviour
 
     public void SetFlag(string flag)
     {
-        if (!string.IsNullOrWhiteSpace(flag))
+        if (!string.IsNullOrWhiteSpace(flag) && flags.Add(flag.Trim()))
         {
-            flags.Add(flag.Trim());
+            FlagChanged?.Invoke(flag.Trim());
         }
     }
 
