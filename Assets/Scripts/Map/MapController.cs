@@ -68,7 +68,7 @@ public class MapController : MonoBehaviour
 
     void HandleToggle()
     {
-        if (!handleInputToggle || GameplayInputLock.IsLocked || !Input.GetKeyDown(KeyCode.M)) return;
+        if (!handleInputToggle || GameplayInputLock.IsLocked || UiFocus.HasMenuSelection || !Input.GetKeyDown(KeyCode.M)) return;
 
         ToggleMap();
     }

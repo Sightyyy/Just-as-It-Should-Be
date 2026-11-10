@@ -18,6 +18,7 @@ public sealed class NpcDialogueTrigger : MonoBehaviour
         if (GameplayInputLock.IsLocked) return;
         if (TypingMiniGameController.IsAnyMinigameActive) return;
         if (PatchingUpMinigameController.IsAnyPatchingActive) return;
+        if (UiFocus.HasMenuSelection) return;
 
         if (dialogueManager == null || player == null || dialogueManager.DialogueIsPlaying)
         {
@@ -27,7 +28,7 @@ public sealed class NpcDialogueTrigger : MonoBehaviour
         playerMovement ??= player.GetComponent<PlayerMovement>();
         if (playerMovement != null && !playerMovement.CanControl) return;
 
-        if (Input.GetKeyDown(KeyCode.Z) && Vector2.Distance(player.position, transform.position) <= interactionRange)
+        if (Vector2.Distance(player.position, transform.position) <= interactionRange && InteractionInput.TryConsumeInteraction())
         {
             if (possibleConversationKeys.Count > 0)
             {

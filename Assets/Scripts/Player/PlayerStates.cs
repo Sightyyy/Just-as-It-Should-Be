@@ -91,6 +91,11 @@ public sealed class PlayerStates : MonoBehaviour
 
     public void Deactivate(string stateName) => SetActive(stateName, false);
 
+    public void ClearAll()
+    {
+        activeStates.Clear();
+    }
+
     public IReadOnlyCollection<PlayerEmotionalState> GetActiveStates()
     {
         return activeStates;

@@ -56,12 +56,12 @@ public class PanelManager : MonoBehaviour
             TogglePause();
         }
 
-        if ((Input.GetKeyDown(KeyCode.P) || Input.GetKeyDown(KeyCode.B)) && IsControllingInnerSelf())
+        if (!isPaused && (Input.GetKeyDown(KeyCode.P) || Input.GetKeyDown(KeyCode.B)) && IsControllingInnerSelf())
         {
             SetSkillOpen(!isSkillOpen);
         }
 
-        if (Input.GetKeyDown(KeyCode.J) && IsControllingRealLife())
+        if (!isPaused && Input.GetKeyDown(KeyCode.J) && IsControllingRealLife())
         {
             TogglePanel(questListPanel);
         }

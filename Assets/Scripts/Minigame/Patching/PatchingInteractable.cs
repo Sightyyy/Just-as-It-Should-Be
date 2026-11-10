@@ -26,6 +26,12 @@ public sealed class PatchingInteractable : MonoBehaviour
             return;
         }
 
+        if (UiFocus.HasMenuSelection)
+        {
+            SetPrompt(false);
+            return;
+        }
+
         bool canInteract = playerInRange
             && patchingMinigame != null
             && patchingMinigame.CanBeginPatching();
@@ -34,7 +40,7 @@ public sealed class PatchingInteractable : MonoBehaviour
 
         if (canInteract
             && !patchingMinigame.IsPatchingActive
-            && Input.GetKey(patchingMinigame.PatchKey))
+            && InteractionInput.TryConsumeInteractionHold())
         {
             patchingMinigame.BeginPatching();
         }

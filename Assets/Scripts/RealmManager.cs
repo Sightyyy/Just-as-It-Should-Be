@@ -52,6 +52,7 @@ public class RealmManager : MonoBehaviour
     private static bool CanSwitchRealm()
     {
         return !GameplayInputLock.IsLocked
+            && !UiFocus.HasMenuSelection
             && !TypingMiniGameController.IsAnyMinigameActive
             && !PatchingUpMinigameController.IsAnyPatchingActive;
     }

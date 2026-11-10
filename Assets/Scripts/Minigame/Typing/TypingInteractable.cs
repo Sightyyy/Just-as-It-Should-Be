@@ -3,7 +3,6 @@ using UnityEngine;
 public sealed class TypingInteractable : MonoBehaviour
 {
     [SerializeField] private TypingMiniGameController typingMiniGame;
-    [SerializeField] private KeyCode interactKey = KeyCode.Z;
     [SerializeField] private GameObject interactPrompt;
 
     private bool playerInRange;
@@ -22,6 +21,11 @@ public sealed class TypingInteractable : MonoBehaviour
             return;
         }
 
+        if (UiFocus.HasMenuSelection)
+        {
+            return;
+        }
+
         if (TypingMiniGameController.IsAnyMinigameActive)
         {
             //SetPrompt(false);
@@ -31,7 +35,7 @@ public sealed class TypingInteractable : MonoBehaviour
         bool canInteract = playerInRange && typingMiniGame != null && typingMiniGame.CanInteract();
         //SetPrompt(canInteract);
 
-        if (canInteract && Input.GetKeyDown(interactKey))
+        if (canInteract && InteractionInput.TryConsumeInteraction())
         {
             typingMiniGame.Interact();
         }

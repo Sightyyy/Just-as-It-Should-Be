@@ -12,7 +12,6 @@ public class AnalogClockHand : MonoBehaviour
     [SerializeField] private bool clockwise = true;
     [SerializeField] private bool useInitialRotationAsMidnight = true;
     [SerializeField] private float midnightRotationOffset;
-    [SerializeField] private bool enableDebugHotkeys = true;
     [SerializeField] private int currentHour;
     [SerializeField] private int currentMinute;
     [SerializeField] private string currentTimeText;
@@ -40,8 +39,6 @@ public class AnalogClockHand : MonoBehaviour
 
     protected virtual void Update()
     {
-        HandleDebugHotkeys();
-
         elapsedSeconds = Mathf.Repeat(elapsedSeconds + Time.unscaledDeltaTime, GetGameDaySeconds());
         UpdateHandRotation();
     }
@@ -57,19 +54,6 @@ public class AnalogClockHand : MonoBehaviour
         float targetHour = Mathf.Repeat(hour + minute / MinutesPerHour, HoursPerDay);
         elapsedSeconds = targetHour / HoursPerDay * GetGameDaySeconds();
         UpdateHandRotation();
-    }
-
-    private void HandleDebugHotkeys()
-    {
-        if (!enableDebugHotkeys) return;
-
-        bool ctrlPressed = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-        bool shiftPressed = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-
-        if (ctrlPressed && shiftPressed && Input.GetKeyDown(KeyCode.F10))
-        {
-            AddGameHours(1f);
-        }
     }
 
     protected virtual void UpdateHandRotation()

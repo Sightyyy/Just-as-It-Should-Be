@@ -18,6 +18,8 @@ public sealed class PlayerStateDebugger : MonoBehaviour
     [SerializeField] private bool enableLegacyHotkeys;
     [SerializeField] private bool showOnScreenDebugList;
 
+    private bool overlaySuppressed;
+
     void Reset()
     {
         stateKeyBindings = new List<StateKeyBinding>
@@ -67,7 +69,7 @@ public sealed class PlayerStateDebugger : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     void OnGUI()
     {
-        if (!showOnScreenDebugList || playerStates == null) return;
+        if (!showOnScreenDebugList || overlaySuppressed || playerStates == null) return;
 
         GUILayout.BeginArea(new Rect(10, 10, 260, 260), GUI.skin.box);
         GUILayout.Label("<b>Player State Debugger</b>", new GUIStyle(GUI.skin.label) { richText = true });
@@ -95,11 +97,16 @@ public sealed class PlayerStateDebugger : MonoBehaviour
         }
     }
 
+    public void SetOverlaySuppressed(bool suppressed)
+    {
+        overlaySuppressed = suppressed;
+    }
+
     public void ResetAllStates()
     {
-        foreach (PlayerEmotionalState state in (PlayerEmotionalState[])Enum.GetValues(typeof(PlayerEmotionalState)))
+        if (playerStates != null)
         {
-            playerStates.SetActive(state, false);
+            playerStates.ClearAll();
         }
 
         if (logToConsole)

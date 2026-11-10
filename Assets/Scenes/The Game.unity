@@ -266,6 +266,8 @@ MonoBehaviour:
   - {fileID: 623705399}
   - {fileID: 1059560602}
   - {fileID: 1137353948}
+  choiceCursor: {fileID: 1940000002}
+  choiceCursorGap: 40
 --- !u!114 &24413094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2934,6 +2936,7 @@ RectTransform:
   - {fileID: 623705400}
   - {fileID: 1059560603}
   - {fileID: 1137353949}
+  - {fileID: 1940000002}
   m_Father: {fileID: 1463665353}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -2941,6 +2944,81 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1940000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1940000002}
+  - component: {fileID: 1940000003}
+  - component: {fileID: 1940000004}
+  m_Layer: 5
+  m_Name: Choice Cursor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &1940000002
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940000001}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 192364931}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 258, y: -129}
+  m_SizeDelta: {x: 32, y: 32}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1940000003
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940000001}
+  m_CullTransparentMesh: 1
+--- !u!114 &1940000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1940000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 0.85, b: 0.2, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &194050625
 GameObject:
   m_ObjectHideFlags: 0
@@ -7550,6 +7628,7 @@ MonoBehaviour:
   playerStates: {fileID: 538218013}
   patchingMinigame: {fileID: 0}
   skillUpgradeManager: {fileID: 0}
+  analogClock: {fileID: 1288226803}
 --- !u!1 &556826524
 GameObject:
   m_ObjectHideFlags: 0
@@ -15739,7 +15818,6 @@ MonoBehaviour:
   clockwise: 1
   useInitialRotationAsMidnight: 1
   midnightRotationOffset: 0
-  enableDebugHotkeys: 1
   currentHour: 0
   currentMinute: 0
   currentTimeText: 
@@ -19223,7 +19301,6 @@ MonoBehaviour:
   clockwise: 1
   useInitialRotationAsMidnight: 1
   midnightRotationOffset: 0
-  enableDebugHotkeys: 1
   currentHour: 0
   currentMinute: 0
   currentTimeText: 
@@ -24936,6 +25013,9 @@ GameObject:
   - component: {fileID: 2084859972}
   - component: {fileID: 2084859971}
   - component: {fileID: 2084859970}
+  - component: {fileID: 2084859973}
+  - component: {fileID: 2084859974}
+  - component: {fileID: 2084859975}
   m_Layer: 0
   m_Name: EventSystem
   m_TagString: Untagged
@@ -25004,6 +25084,43 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2084859973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084859969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f64789a0b1c2d3e4f56701, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameCursorController
+--- !u!114 &2084859974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084859969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f64789a0b1c2d3e4f56702, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::KeyboardOnlyUiController
+--- !u!114 &2084859975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084859969}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f64789a0b1c2d3e4f56703, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UiSelectionHighlighter
+  selectedTextColor: {r: 1, g: 0.85, b: 0.2, a: 1}
 --- !u!1 &2090134852
 GameObject:
   m_ObjectHideFlags: 0

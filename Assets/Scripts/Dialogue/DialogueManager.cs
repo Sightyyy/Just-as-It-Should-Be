@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Ink.Runtime;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public sealed class DialogueManager : MonoBehaviour
@@ -24,11 +23,15 @@ public sealed class DialogueManager : MonoBehaviour
 
     [Header("Choices UI")]
     [SerializeField] private GameObject[] choices;
+    [SerializeField] private RectTransform choiceCursor;
+    [SerializeField, Min(0f)] private float choiceCursorGap = 40f;
 
     private readonly DialogueState dialogueState = new DialogueState();
     private readonly DialogueTagParser tagParser = new DialogueTagParser();
     private TextMeshProUGUI[] choiceTexts;
     private Button[] choiceButtons;
+    private RectTransform[] choiceRects;
+    private int selectedChoiceIndex;
     private Story currentStory;
     private Coroutine displayLineCoroutine;
     private bool isTyping;
@@ -60,20 +63,47 @@ public sealed class DialogueManager : MonoBehaviour
 
     private void Update()
     {
-        if (!DialogueIsPlaying || !Input.GetKeyDown(KeyCode.F))
+        if (!DialogueIsPlaying || TextInputFocus.IsFocused)
         {
             return;
         }
 
         if (isTyping)
         {
-            CompleteCurrentLine();
+            if (InteractionInput.TryConsumeInteraction())
+            {
+                CompleteCurrentLine();
+            }
+
             return;
         }
 
-        if (currentStory != null && currentStory.currentChoices.Count == 0)
+        if (currentStory != null && currentStory.currentChoices.Count > 0)
+        {
+            HandleChoiceInput();
+            return;
+        }
+
+        if (InteractionInput.TryConsumeInteraction())
         {
             ContinueStory();
+        }
+    }
+
+    private void HandleChoiceInput()
+    {
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            MoveChoiceSelection(1);
+        }
+        else if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            MoveChoiceSelection(-1);
+        }
+
+        if (InteractionInput.TryConsumeInteraction())
+        {
+            MakeChoice(selectedChoiceIndex);
         }
     }
 
@@ -275,7 +305,9 @@ public sealed class DialogueManager : MonoBehaviour
         }
 
         SetContinueVisible(false);
-        SelectFirstVisibleChoice();
+        selectedChoiceIndex = 0;
+        SetChoiceCursorVisible(true);
+        UpdateChoiceCursor();
     }
 
     public void MakeChoice(int choiceIndex)
@@ -288,6 +320,93 @@ public sealed class DialogueManager : MonoBehaviour
         HideChoices();
         currentStory.ChooseChoiceIndex(choiceIndex);
         ContinueStory();
+    }
+
+    private void MoveChoiceSelection(int visualDirection)
+    {
+        if (currentStory == null || choiceRects == null || choices == null)
+        {
+            return;
+        }
+
+        int visibleCount = Mathf.Min(currentStory.currentChoices.Count, choices.Length);
+        if (visibleCount <= 1 || selectedChoiceIndex < 0 || selectedChoiceIndex >= visibleCount)
+        {
+            return;
+        }
+
+        RectTransform currentRect = choiceRects[selectedChoiceIndex];
+        if (currentRect == null)
+        {
+            return;
+        }
+
+        float currentY = currentRect.anchoredPosition.y;
+        int bestIndex = -1;
+        float bestDistance = float.MaxValue;
+
+        for (int index = 0; index < visibleCount; index++)
+        {
+            RectTransform candidate = choiceRects[index];
+            if (index == selectedChoiceIndex || candidate == null)
+            {
+                continue;
+            }
+
+            float deltaY = candidate.anchoredPosition.y - currentY;
+            if (visualDirection > 0 ? deltaY <= 0f : deltaY >= 0f)
+            {
+                continue;
+            }
+
+            float distance = Mathf.Abs(deltaY);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestIndex = index;
+            }
+        }
+
+        if (bestIndex < 0)
+        {
+            return;
+        }
+
+        selectedChoiceIndex = bestIndex;
+        UpdateChoiceCursor();
+    }
+
+    private void UpdateChoiceCursor()
+    {
+        if (choiceCursor == null || choiceCursor.parent == null || currentStory == null || choiceRects == null)
+        {
+            return;
+        }
+
+        int visibleCount = Mathf.Min(currentStory.currentChoices.Count, choices.Length);
+        if (selectedChoiceIndex < 0 || selectedChoiceIndex >= visibleCount)
+        {
+            return;
+        }
+
+        RectTransform selectedRect = choiceRects[selectedChoiceIndex];
+        if (selectedRect == null)
+        {
+            return;
+        }
+
+        Vector3 leftCenterWorld = selectedRect.TransformPoint(
+            new Vector3(selectedRect.rect.xMin, selectedRect.rect.center.y, 0f));
+        Vector3 localPosition = choiceCursor.parent.InverseTransformPoint(leftCenterWorld);
+        choiceCursor.anchoredPosition = new Vector2(localPosition.x - choiceCursorGap, localPosition.y);
+    }
+
+    private void SetChoiceCursorVisible(bool visible)
+    {
+        if (choiceCursor != null)
+        {
+            choiceCursor.gameObject.SetActive(visible);
+        }
     }
 
     private void ApplyPresentationTags()
@@ -317,6 +436,7 @@ public sealed class DialogueManager : MonoBehaviour
     {
         choiceTexts = new TextMeshProUGUI[choices?.Length ?? 0];
         choiceButtons = new Button[choices?.Length ?? 0];
+        choiceRects = new RectTransform[choices?.Length ?? 0];
 
         for (int index = 0; index < choiceTexts.Length; index++)
         {
@@ -328,6 +448,7 @@ public sealed class DialogueManager : MonoBehaviour
 
             choiceTexts[index] = choice.GetComponentInChildren<TextMeshProUGUI>(true);
             choiceButtons[index] = choice.GetComponent<Button>();
+            choiceRects[index] = choice.GetComponent<RectTransform>();
             if (choiceButtons[index] == null)
             {
                 Debug.LogWarning($"Dialogue choice {index + 1} has no Button component.", choice);
@@ -341,6 +462,8 @@ public sealed class DialogueManager : MonoBehaviour
 
     private void HideChoices()
     {
+        SetChoiceCursorVisible(false);
+
         if (choices == null)
         {
             return;
@@ -351,24 +474,6 @@ public sealed class DialogueManager : MonoBehaviour
             if (choice != null)
             {
                 choice.SetActive(false);
-            }
-        }
-    }
-
-    private void SelectFirstVisibleChoice()
-    {
-        if (EventSystem.current == null || choices == null)
-        {
-            return;
-        }
-
-        EventSystem.current.SetSelectedGameObject(null);
-        foreach (GameObject choice in choices)
-        {
-            if (choice != null && choice.activeInHierarchy)
-            {
-                EventSystem.current.SetSelectedGameObject(choice);
-                return;
             }
         }
     }
